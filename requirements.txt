@@ -1,0 +1,1 @@
+git+git://github.com/electronstudio/raylib-python-cffi.git#egg=raylib

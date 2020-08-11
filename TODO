@@ -1,0 +1,134 @@
+dream table (working title)
+
+- it's like a spreadsheet for pixel art
+- you start out with an infinite empty grid
+- click and drag to create thingies
+- wire them together to create game assets
+
+- design goals
+  - modular
+  - non-destructive
+  - minimalist
+  - keyboard friendly
+
+- what to work on
+  x right click drag to create new canvas thingies
+  x selection and deletion
+  x left click drag to move canvas thingies
+  x draw tool
+  x dropper tool
+  x grid tool
+  - cellref tool
+  > right click drag on canvas thingies to resize
+  - scaling (s + wheel)
+  - import via drag and drop
+
+- controls
+  x on grid
+    x left click: deselect
+    x left click drag: box select
+    x middle click drag: pan
+    x right click: create a thingy
+
+  - on a canvas thingy
+    x left click: select
+    x left click drag: move
+    - right click: change kind or metadata
+    > right click drag: resize
+
+- tools
+  x x - draw
+  x c - eyedropper
+  - f - fill
+  - v - line
+  - e - eraser
+  - b - box
+  - s - scale
+  x g - adjust grid
+  - r - cellref paint (right click: source, left: dest)
+  - t - cellref fill
+
+- thingies
+  - canvases
+    - a canvas is a 2d array of pixels that you can draw on
+    - has a width and height and a scale (default = 1)
+    - has an grid of its own (default = width x height, so just one cell)
+    - subregions of the grid are called cells
+    - cells can be named?
+    - other thingies can reference the canvas, or a particular cell
+    - cells can be references to other canvases or their cells
+      - "cellref painter"
+        - source: canvas with a grid
+        - dest: canvas with a grid
+        - updates grid references to refer to source
+          - for building sprite sheets, tilemaps, animations
+    - canvas with scale 4 referencing canvas with scale 1
+      - aka a magnifier
+      - paint on either one
+
+  - brushes
+    - use a canvas as a brush
+
+  - patterns
+    - literally just canvases
+
+  - palettes
+
+  - layers
+
+  - libraries / sequences?
+
+  - timelines
+    - 1d array of (cell ref, duration)
+    - output can be referenced elsewhere (e.g. animated tilemap)
+
+  - generators
+    - e.g. create wang tiles
+
+  - drivers (clocks? buttons?)
+    - play/pause/stop/frame advance buttons for animations
+
+  - importers
+    - load from disk (watch files for changes)
+    - useful for reference images too
+
+  - exporters
+    - write to disk as sheets or individual files
+
+- workflows I want to enable
+  - draw a tilemap that refers to a sprite sheet, and updates when you draw on it
+  - build your own editor
+  - export in a variety of formats
+
+- polish
+  - UI themes (gotham, solarized, monochrome dark, monochrome light)
+  - z-order for thingies
+  - camera velocity (fling/zoom)
+  - camera ease to target
+  - zoom based on cursor position
+  - zoom to fit selected objects
+  - change zoom on window resize
+  - touch support
+  - drag and drop
+  - shift+select to expand selection
+  - move all selected thingies
+  - copy and paste palette strings (or individual colors)
+  - copy and paste thingies (and selections of thingies)
+  - lock thingies to screen
+  - saving / loading layouts
+  - merging project files
+  - undo / redo / autosave
+  - help / welcome / splash
+  - multiple viewports, blender-style
+  - ecosystem compat (aseprite, tiled, godot)
+  - load fantasy console carts (pico-8, tic-80...)
+  - a trailer to promote it
+  - better names?
+    - collagen? collage, generate, glue / binding together (not very googleable)
+    - dream desk? (nope, taken by a crappy VR app)
+
+- extremely wild ideas!
+  - scripting (lua or python or whatever)
+  - make it a fantasy console, lol
+    - like a fantasy console exploded onto your desk
+  - audio synthesis and code
