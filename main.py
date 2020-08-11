@@ -682,7 +682,7 @@ dropper_tool = DropperTool()
 
 def main():
     screen = Screen(800, 600)
-    pyray.init_window(screen.w, screen.h, "Spritespace")
+    pyray.init_window(screen.w, screen.h, "Dream Table")
     pyray.set_target_fps(60)
 
     font = pyray.load_font("resources/fonts/alpha_beta.png")
