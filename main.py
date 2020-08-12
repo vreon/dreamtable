@@ -331,6 +331,160 @@ class DropperTool:
         )
 
 
+class CellRefDropperTool:
+    def __init__(self):
+        self.active = False
+
+    def update(self):
+        self.active = pyray.is_key_down(pyray.KEY_R)
+
+    def update_thingy(self, thingy, mouse, camera):
+        if not thingy:
+            return
+
+        world_pos = pyray.get_screen_to_world_2d(mouse.pos, camera.camera)
+
+        if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
+            cell_ref_tool.source_primary_cell_x = int(
+                (world_pos.x - thingy.x) / thingy.w * thingy.cells_x
+            )
+            cell_ref_tool.source_primary_cell_y = int(
+                (world_pos.y - thingy.y) / thingy.h * thingy.cells_y
+            )
+            cell_ref_tool.source_primary = thingy
+
+        if pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
+            cell_ref_tool.source_secondary_cell_x = int(
+                (world_pos.x - thingy.x) / thingy.w * thingy.cells_x
+            )
+            cell_ref_tool.source_secondary_cell_y = int(
+                (world_pos.y - thingy.y) / thingy.h * thingy.cells_y
+            )
+            cell_ref_tool.source_secondary = thingy
+
+    def draw(self, mouse, camera):
+        if not self.active:
+            return
+
+        # debug: temp ref icon
+        pyray.draw_text_ex(
+            hud.font,
+            b"? ->",
+            pyray.Vector2(mouse.pos.x + 16, mouse.pos.y - 16),
+            24,
+            1,
+            UI.HUD_TEXT,
+        )
+
+        pyray.begin_mode_2d(camera.camera)
+
+        crt = cell_ref_tool
+        if crt.source_primary:
+            pyray.draw_rectangle_lines_ex(
+                pyray.Rectangle(
+                    crt.source_primary.x
+                    + int(
+                        crt.source_primary.w
+                        * crt.source_primary_cell_x
+                        / crt.source_primary.cells_x
+                    )
+                    - 1,
+                    crt.source_primary.y
+                    + int(
+                        crt.source_primary.h
+                        * crt.source_primary_cell_y
+                        / crt.source_primary.cells_y
+                    )
+                    - 1,
+                    int(crt.source_primary.w / crt.source_primary.cells_x) + 2,
+                    int(crt.source_primary.h / crt.source_primary.cells_y) + 2,
+                ),
+                1,
+                (255, 0, 0, 255),
+            )
+
+        if crt.source_secondary:
+            pyray.draw_rectangle_lines_ex(
+                pyray.Rectangle(
+                    crt.source_secondary.x
+                    + int(
+                        crt.source_secondary.w
+                        * crt.source_secondary_cell_x
+                        / crt.source_secondary.cells_x
+                    )
+                    - 1,
+                    crt.source_secondary.y
+                    + int(
+                        crt.source_secondary.h
+                        * crt.source_secondary_cell_y
+                        / crt.source_secondary.cells_y
+                    )
+                    - 1,
+                    int(crt.source_secondary.w / crt.source_secondary.cells_x) + 2,
+                    int(crt.source_secondary.h / crt.source_secondary.cells_y) + 2,
+                ),
+                1,
+                (0, 0, 255, 255),
+            )
+
+        pyray.end_mode_2d()
+
+
+class CellRefTool:
+    def __init__(self):
+        self.active = False
+        self.source_primary = None
+        self.source_primary_cell_x = None
+        self.source_primary_cell_y = None
+        self.source_secondary = None
+        self.source_secondary_cell_x = None
+        self.source_secondary_cell_y = None
+
+    def update(self):
+        self.active = pyray.is_key_down(pyray.KEY_T)
+
+    def update_thingy(self, thingy, mouse, camera):
+        if not thingy:
+            return
+
+        world_pos = pyray.get_screen_to_world_2d(mouse.pos, camera.camera)
+
+        cell_x = int((world_pos.x - thingy.x) / thingy.w * thingy.cells_x)
+        cell_y = int((world_pos.y - thingy.y) / thingy.h * thingy.cells_y)
+
+        if pyray.is_mouse_button_down(pyray.MOUSE_LEFT_BUTTON):
+            thingy.cell_refs[cell_y][cell_x] = (
+                self.source_primary,
+                self.source_primary_cell_x,
+                self.source_primary_cell_y,
+            )
+
+        if pyray.is_mouse_button_down(pyray.MOUSE_RIGHT_BUTTON):
+            thingy.cell_refs[cell_y][cell_x] = (
+                self.source_secondary,
+                self.source_secondary_cell_x,
+                self.source_secondary_cell_y,
+            )
+
+        # debug delete refs with middle mouse
+        if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):
+            thingy.cell_refs[cell_y][cell_x] = None
+
+    def draw(self, mouse, camera):
+        if not self.active:
+            return
+
+        # debug: temp ref icon
+        pyray.draw_text_ex(
+            hud.font,
+            b"  -> !",
+            pyray.Vector2(mouse.pos.x + 16, mouse.pos.y - 16),
+            24,
+            1,
+            UI.HUD_TEXT,
+        )
+
+
 class GridTool:
     def __init__(self):
         self.active = False
@@ -361,6 +515,12 @@ class GridTool:
 
         thingy.cells_x = max(thingy.cells_x, 1)
         thingy.cells_y = max(thingy.cells_y, 1)
+
+        if cells_x_delta != 0 or cells_y_delta != 0:
+            # todo blehhhhhhghghgh
+            thingy.cell_refs = [
+                [None for x in range(thingy.cells_x)] for y in range(thingy.cells_y)
+            ]
 
     def draw(self, mouse, camera):
         if not self.active:
@@ -437,6 +597,10 @@ class ThingySpace:
             grid_tool.update_thingy(self._hovered_thingy, mouse, camera)
         elif dropper_tool.active:
             dropper_tool.update_thingy(self._hovered_thingy, mouse, camera)
+        elif cell_ref_tool.active:
+            cell_ref_tool.update_thingy(self._hovered_thingy, mouse, camera)
+        elif cell_ref_dropper_tool.active:
+            cell_ref_dropper_tool.update_thingy(self._hovered_thingy, mouse, camera)
         else:
             # todo: this smooth zoom stuff is super fudged, but feels OK for now
             if wheel := pyray.get_mouse_wheel_move():
@@ -596,7 +760,6 @@ class CanvasThingy:
         cells_x=1,
         cells_y=1,
         image=None,
-        reference=None,
         color=(0, 0, 0, 255),
     ):
         if not w and not h and not image:
@@ -627,6 +790,9 @@ class CanvasThingy:
         self.cells_x = cells_x
         self.cells_y = cells_y
         self.cells_visible = False
+        self.cell_refs = [
+            [None for x in range(self.cells_x)] for y in range(self.cells_y)
+        ]
 
         self.texture = pyray.load_texture_from_image(self.image)
         self.selected = False
@@ -673,6 +839,33 @@ class CanvasThingy:
             outline_color,
         )
 
+        for cell_y, cell_ref_row in enumerate(self.cell_refs):
+            for cell_x, cell_ref in enumerate(cell_ref_row):
+                if not cell_ref:
+                    continue
+
+                source, source_cell_x, source_cell_y = cell_ref
+
+                # draw refs as samples from source
+                pyray.draw_texture_pro(
+                    source.texture,
+                    pyray.Rectangle(
+                        int(source.w * source_cell_x / source.cells_x),
+                        int(source.h * source_cell_y / source.cells_y),
+                        int(source.w / source.cells_x),
+                        int(source.h / source.cells_y),
+                    ),
+                    pyray.Rectangle(
+                        self.x + int(self.w * cell_x / self.cells_x),
+                        self.y + int(self.h * cell_y / self.cells_y),
+                        int(self.w / self.cells_x),
+                        int(self.h / self.cells_y),
+                    ),
+                    pyray.Vector2(0, 0),
+                    0,
+                    (255, 255, 255, 255),
+                )
+
         if self.cells_visible or grid_tool.active:
             color = (
                 UI.GRID_CELLS_OBVIOUS
@@ -698,6 +891,8 @@ hud = HUD()
 draw_tool = DrawTool()
 grid_tool = GridTool()
 dropper_tool = DropperTool()
+cell_ref_tool = CellRefTool()
+cell_ref_dropper_tool = CellRefDropperTool()
 
 
 def main():
@@ -726,6 +921,8 @@ def main():
         draw_tool.update()
         grid_tool.update()
         dropper_tool.update()
+        cell_ref_tool.update()
+        cell_ref_dropper_tool.update()
         thingy_space.update(mouse, camera)
 
         # debug: will set up proper hotkeys eventually...
@@ -748,6 +945,8 @@ def main():
         draw_tool.draw(mouse)
         grid_tool.draw(mouse, camera)
         dropper_tool.draw(mouse)
+        cell_ref_tool.draw(mouse, camera)
+        cell_ref_dropper_tool.draw(mouse, camera)
         pyray.end_drawing()
 
     pyray.close_window()

@@ -46,8 +46,9 @@ dream table (working title)
   - b - box
   - s - scale
   x g - adjust grid
-  - r - cellref paint (right click: source, left: dest)
-  - t - cellref fill
+  - t - cellref paint
+  - r - cellref dropper
+  - y - cellref fill
 
 - thingies
   - canvases
