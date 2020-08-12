@@ -728,13 +728,6 @@ def main():
         dropper_tool.update()
         thingy_space.update(mouse, camera)
 
-        hud.print("Hello, world!")
-        hud.print(f"mouse: ({mouse.pos.x}, {mouse.pos.y})")
-        hud.print(f"mouse delta: ({mouse.delta.x}, {mouse.delta.y})")
-        hud.print(
-            f"camera: ({camera.camera.target.x}, {camera.camera.target.y}), zoom {camera.camera.zoom}, zoomvel {camera.zoom_velocity}"
-        )
-
         # debug: will set up proper hotkeys eventually...
         if pyray.is_key_pressed(pyray.KEY_HOME):
             camera.camera.target = pyray.Vector2(0, 0)
