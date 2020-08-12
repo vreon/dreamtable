@@ -618,6 +618,10 @@ class CanvasThingy:
             )()
         )
 
+        image_format = pyray.UNCOMPRESSED_R8G8B8A8  # default apparently
+        if self.image.format != image_format:
+            pyray.image_format(pyray.pointer(self.image), image_format)
+
         self.w = self.image.width
         self.h = self.image.height
         self.cells_x = cells_x
