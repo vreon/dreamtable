@@ -529,6 +529,7 @@ class ThingySpace:
                             y=int(rect.y),
                             w=int(rect.width),
                             h=int(rect.height),
+                            color=draw_tool.color_secondary,
                         )
                     )
                 self._create_selection = None
