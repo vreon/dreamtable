@@ -8,25 +8,29 @@ from datetime import datetime
 pyray = PyRay()
 
 
-# XXX: Something's wrong with pyray.image_draw_line, here's a Python port
-def pyray_image_draw_line(
-    image_ptr, start_pos_x, start_pos_y, end_pos_x, end_pos_y, color
-):
-    m = 2 * (end_pos_y - start_pos_y)
-    slope_error = m - (end_pos_x - start_pos_x)
-
-    x = start_pos_x
-    y = start_pos_y
-
-    while x <= end_pos_x:
-        pyray.image_draw_pixel(image_ptr, int(x), int(y), color)
-        slope_error += m
-
-        if slope_error >= 0:
-            y += 1
-            slope_error -= 2 * (end_pos_x - start_pos_x)
-
-        x += 1
+# XXX: Something's wrong with pyray.image_draw_line
+# here's Bresenham from Wikipedia lol
+def image_draw_line(image_ptr, x1, y1, x2, y2, color):
+    x1 = int(x1)
+    y1 = int(y1)
+    x2 = int(x2)
+    y2 = int(y2)
+    dx = abs(x2 - x1)
+    sx = 1 if x1 < x2 else -1
+    dy = -abs(y2 - y1)
+    sy = 1 if y1 < y2 else -1
+    err = dx + dy
+    while True:
+        pyray.image_draw_pixel(image_ptr, x1, y1, color)
+        if x1 == x2 and y1 == y2:
+            break
+        e2 = 2 * err
+        if e2 >= dy:
+            err += dy
+            x1 += sx
+        if e2 <= dx:
+            err += dx
+            y1 += sy
 
 
 class UI:
@@ -218,9 +222,12 @@ class DrawTool:
         self.active = False
         self.color_primary = (255, 255, 255, 255)
         self.color_secondary = (0, 0, 0, 255)
+        self.last_pos = None
 
     def update(self):
         self.active = pyray.is_key_down(pyray.KEY_X)
+        if not self.active:
+            self.last_pos = None
 
     def update_thingy(self, thingy, mouse, camera):
         if not thingy:
@@ -231,12 +238,20 @@ class DrawTool:
         elif pyray.is_mouse_button_down(pyray.MOUSE_RIGHT_BUTTON):
             color = self.color_secondary
         else:
+            self.last_pos = None
             return
 
         world_pos = pyray.get_screen_to_world_2d(mouse.pos, camera.camera)
-        x = int(world_pos.x - thingy.x)
-        y = int(world_pos.y - thingy.y)
-        pyray.image_draw_pixel(pyray.pointer(thingy.image), x, y, color)
+
+        if not self.last_pos:
+            self.last_pos = world_pos
+
+        x1 = int(self.last_pos.x - thingy.x)
+        y1 = int(self.last_pos.y - thingy.y)
+        x2 = int(world_pos.x - thingy.x)
+        y2 = int(world_pos.y - thingy.y)
+        image_draw_line(pyray.pointer(thingy.image), x1, y1, x2, y2, color)
+        self.last_pos = world_pos
         thingy.dirty = True
 
     def draw(self, mouse):
