@@ -1,1 +1,2 @@
+esper==1.3
 git+git://github.com/electronstudio/raylib-python-cffi.git#egg=raylib

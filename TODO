@@ -104,6 +104,7 @@ dream table (working title)
 
 - polish
   - UI themes (gotham, solarized, monochrome dark, monochrome light)
+  - customizable UI bitmaps (font, 9-patch window decorations)
   - z-order for thingies
   - camera velocity (fling/zoom)
   - camera ease to target
