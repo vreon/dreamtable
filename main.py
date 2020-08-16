@@ -1529,7 +1529,7 @@ def main():
         Button(is_switch=True),
         Position(28, -50),
         Extent(8, 8),
-        Image(filename="resources/icons/pencil.png"),
+        Image(filename="resources/icons/dropper.png"),
         Hoverable(),
     )
 
