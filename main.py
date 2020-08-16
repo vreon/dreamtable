@@ -191,6 +191,11 @@ class Theme:
 
 
 @dataclass
+class EditorMode:
+    tool: int = 0
+
+
+@dataclass
 class DebugEntity:
     pass
 
@@ -242,12 +247,11 @@ class DebugEntityRenderer(esper.Processor):
     """Draws a basic spatial representation of the entity, for debugging."""
 
     def process(self):
+        camera_2d = None
         for _, cam in self.world.get_component(Camera):
             if cam.active:
+                camera_2d = cam.camera_2d
                 break
-        else:
-            # Skip rendering if there's no active camera
-            return
 
         for _, theme in self.world.get_component(Theme):
             break
@@ -258,8 +262,8 @@ class DebugEntityRenderer(esper.Processor):
         for ent, (_, pos, ext) in self.world.get_components(
             DebugEntity, Position, Extent
         ):
-            if pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(cam.camera_2d)
+            if camera_2d and pos.space == PositionSpace.WORLD:
+                pyray.begin_mode_2d(camera_2d)
 
             rect = pyray.Rectangle(
                 int(pos.x), int(pos.y), int(ext.width), int(ext.height)
@@ -294,7 +298,7 @@ class DebugEntityRenderer(esper.Processor):
                     theme.font, name.name, (int(x), int(y)), font_size, spacing, color,
                 )
 
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.end_mode_2d()
 
 
@@ -357,12 +361,11 @@ class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
     def process(self):
+        camera_2d = None
         for _, cam in self.world.get_component(Camera):
             if cam.active:
+                camera_2d = cam.camera_2d
                 break
-        else:
-            # Skip rendering if there's no active camera
-            return
 
         for _, theme in self.world.get_component(Theme):
             break
@@ -371,7 +374,7 @@ class PositionMarkerRenderer(esper.Processor):
             return
 
         for _, (pos, mark) in self.world.get_components(Position, PositionMarker):
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.begin_mode_2d(cam.camera_2d)
 
             pyray.draw_line_v(
@@ -385,7 +388,7 @@ class PositionMarkerRenderer(esper.Processor):
                 theme.color_position_marker,
             )
 
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.end_mode_2d()
 
 
@@ -465,9 +468,7 @@ class SelectionRegionController(esper.Processor):
     """Updates selection regions."""
 
     def process(self):
-        # todo get this from elsewhere
-        # maybe an "editor" component that also holds the currently selected tool?
-        # the theme component could be merged into that, maybe
+        # todo get this from elsewhere, maybe editormode?
         SNAP_X = 8
         SNAP_Y = 8
 
@@ -620,12 +621,11 @@ class SelectionRegionRenderer(esper.Processor):
     """Draws selection regions."""
 
     def process(self):
+        camera_2d = None
         for _, cam in self.world.get_component(Camera):
             if cam.active:
+                camera_2d = cam.camera_2d
                 break
-        else:
-            # Skip rendering if there's no active camera
-            return
 
         theme = None
         for _, theme in self.world.get_component(Theme):
@@ -634,7 +634,7 @@ class SelectionRegionRenderer(esper.Processor):
         for _, (pos, ext, sel) in self.world.get_components(
             Position, Extent, SelectionRegion
         ):
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.begin_mode_2d(cam.camera_2d)
 
             if sel.type == SelectionType.NORMAL:
@@ -677,7 +677,7 @@ class SelectionRegionRenderer(esper.Processor):
                     theme.color_text_normal,
                 )
 
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.end_mode_2d()
 
 
@@ -838,12 +838,11 @@ class CanvasRenderer(esper.Processor):
     """Draws Canvases and their images."""
 
     def process(self):
+        camera_2d = None
         for _, cam in self.world.get_component(Camera):
             if cam.active:
+                camera_2d = cam.camera_2d
                 break
-        else:
-            # Skip rendering if there's no active camera
-            return
 
         for _, theme in self.world.get_component(Theme):
             break
@@ -854,7 +853,7 @@ class CanvasRenderer(esper.Processor):
         for ent, (canvas, pos, ext) in self.world.get_components(
             Canvas, Position, Extent
         ):
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.begin_mode_2d(cam.camera_2d)
 
             # draw texture if it has an image
@@ -941,8 +940,34 @@ class CanvasRenderer(esper.Processor):
                             cell_grid_color,
                         )
 
-            if pos.space == PositionSpace.WORLD:
+            if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.end_mode_2d()
+
+
+# debug
+class EditorModeRenderer(esper.Processor):
+    def process(self):
+        for _, theme in self.world.get_component(Theme):
+            break
+        else:
+            return
+
+        for _, mode in self.world.get_component(EditorMode):
+            break
+        else:
+            return
+
+        pyray.draw_text_ex(
+            theme.font, str(mode.tool), (0, 0), 8, 1, theme.color_text_normal,
+        )
+
+
+class ButtonRenderer(esper.Processor):
+    def process(self):
+        for _, theme in self.world.get_component(Theme):
+            break
+        else:
+            return
 
 
 ################################################################################
@@ -1395,9 +1420,7 @@ def main():
     )
 
     theme = Theme(font=pyray.load_font("resources/fonts/alpha_beta.png"))
-    world.create_entity(
-        Name("Theme"), theme,
-    )
+    world.create_entity(Name("Editor"), theme, EditorMode())
 
     world.create_entity(Name("Origin"), Position(), PositionMarker())
     world.create_entity(
@@ -1459,6 +1482,7 @@ def main():
     world.add_processor(SelectionRegionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
+    world.add_processor(EditorModeRenderer())
     world.add_processor(SelectableDeleteController())
     world.add_processor(ImageDeleteController())
     world.add_processor(FinalDeleteController())
@@ -1469,7 +1493,6 @@ def main():
             break
     else:
         raise RuntimeError("No active camera!")
-    camera_2d = cam.camera_2d
 
     while not pyray.window_should_close():
         pyray.begin_drawing()
@@ -1481,10 +1504,10 @@ def main():
         cell_ref_tool.update()
         cell_ref_dropper_tool.update()
         draw_tool.draw()
-        grid_tool.draw(camera_2d, theme)
+        grid_tool.draw(cam.camera_2d, theme)
         dropper_tool.draw()
-        cell_ref_tool.draw(camera_2d, theme)
-        cell_ref_dropper_tool.draw(camera_2d, theme)
+        cell_ref_tool.draw(cam.camera_2d, theme)
+        cell_ref_dropper_tool.draw(cam.camera_2d, theme)
         pyray.end_drawing()
 
     pyray.close_window()
