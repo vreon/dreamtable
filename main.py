@@ -497,9 +497,16 @@ class SelectionRegionController(esper.Processor):
 
         # Are we hovering over anything? If so, we can't create selections
         hovering = False
-        for _, hover in self.world.get_component(Hoverable):
+        for ent, hover in self.world.get_component(Hoverable):
             if hover.hovering:
                 hovering = True
+
+                # If we just clicked, select only this.
+                # todo if we're holding shift, don't deselect other stuff
+                if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
+                    for sel_ent, sel in self.world.get_component(Selectable):
+                        sel.selected = ent == sel_ent
+
                 break
 
         # Create new selections
@@ -623,7 +630,6 @@ class SelectionRegionController(esper.Processor):
                     Hoverable(),
                     Selectable(),
                     Deletable(),
-                    DebugEntity(),
                 )
                 self.world.delete_entity(ent)
                 continue
