@@ -171,22 +171,22 @@ class Image:
 
 @dataclass
 class Theme:
-    BACKGROUND: Color = (9, 12, 17, 255)
-    POSITION_MARKER: Color = (164, 84, 30, 255)
-    GRID_CELLS_SUBTLE: Color = (255, 255, 255, 32)
-    GRID_CELLS_OBVIOUS: Color = (255, 255, 255, 64)
-    GRID_MINOR: Color = (68, 93, 144, 16)
-    GRID_MAJOR: Color = (68, 93, 144, 32)
-    HUD_TEXT: Color = (255, 255, 255, 255)
-    HUD_ERROR: Color = (164, 84, 30, 255)
-    CREATE_OUTLINE: Color = (0, 255, 0, 128)
-    CREATE_FILL: Color = (0, 255, 0, 32)
-    SELECTION_OUTLINE: Color = (68, 93, 144, 128)
-    SELECTION_FILL: Color = (68, 93, 144, 32)
-    THINGY_OUTLINE: Color = (68, 93, 144, 16)
-    THINGY_HOVERED_OUTLINE: Color = (68, 93, 144, 48)
-    THINGY_SELECTED_OUTLINE: Color = (68, 93, 144, 128)
-    DEBUG_MAGENTA: Color = (255, 0, 255, 255)
+    color_background: Color = (9, 12, 17, 255)
+    color_position_marker: Color = (164, 84, 30, 255)
+    color_grid_cells_subtle: Color = (255, 255, 255, 32)
+    color_grid_cells_obvious: Color = (255, 255, 255, 64)
+    color_grid_minor: Color = (68, 93, 144, 16)
+    color_grid_major: Color = (68, 93, 144, 32)
+    color_text_normal: Color = (255, 255, 255, 255)
+    color_text_error: Color = (164, 84, 30, 255)
+    color_selection_create_outline: Color = (0, 255, 0, 128)
+    color_selection_create_fill: Color = (0, 255, 0, 32)
+    color_selection_normal_outline: Color = (68, 93, 144, 128)
+    color_selection_normal_fill: Color = (68, 93, 144, 32)
+    color_thingy_outline: Color = (68, 93, 144, 16)
+    color_thingy_hovered_outline: Color = (68, 93, 144, 48)
+    color_thingy_selected_outline: Color = (68, 93, 144, 128)
+    color_debug_magenta: Color = (255, 0, 255, 255)
     font: Any = None  # TODO
 
 
@@ -264,7 +264,7 @@ class DebugEntityRenderer(esper.Processor):
             rect = pyray.Rectangle(
                 int(pos.x), int(pos.y), int(ext.width), int(ext.height)
             )
-            color = theme.DEBUG_MAGENTA
+            color = theme.color_debug_magenta
 
             pyray.draw_rectangle_lines_ex(rect, 1, color)
 
@@ -273,11 +273,11 @@ class DebugEntityRenderer(esper.Processor):
 
             for hov in self.world.try_component(ent, Hoverable):
                 if hov.hovering:
-                    outline_color = theme.THINGY_HOVERED_OUTLINE
+                    outline_color = theme.color_thingy_hovered_outline
 
             for sel in self.world.try_component(ent, Selectable):
                 if sel.selected:
-                    outline_color = theme.SELECTION_OUTLINE
+                    outline_color = theme.color_selection_normal_outline
 
             if outline_color:
                 pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
@@ -377,12 +377,12 @@ class PositionMarkerRenderer(esper.Processor):
             pyray.draw_line_v(
                 (int(pos.x - mark.size), int(pos.y)),
                 (int(pos.x + mark.size), int(pos.y)),
-                theme.POSITION_MARKER,
+                theme.color_position_marker,
             )
             pyray.draw_line_v(
                 (int(pos.x), int(pos.y - mark.size)),
                 (int(pos.x), int(pos.y + mark.size)),
-                theme.POSITION_MARKER,
+                theme.color_position_marker,
             )
 
             if pos.space == PositionSpace.WORLD:
@@ -638,12 +638,12 @@ class SelectionRegionRenderer(esper.Processor):
                 pyray.begin_mode_2d(cam.camera_2d)
 
             if sel.type == SelectionType.NORMAL:
-                fill_color = theme.SELECTION_FILL
-                outline_color = theme.SELECTION_OUTLINE
+                fill_color = theme.color_selection_normal_fill
+                outline_color = theme.color_selection_normal_outline
                 labeled = False
             elif sel.type == SelectionType.CREATE:
-                fill_color = theme.CREATE_FILL
-                outline_color = theme.CREATE_OUTLINE
+                fill_color = theme.color_selection_create_fill
+                outline_color = theme.color_selection_create_outline
                 labeled = True
             else:
                 continue
@@ -674,7 +674,7 @@ class SelectionRegionRenderer(esper.Processor):
                     text_pos,
                     8,
                     1,
-                    theme.HUD_TEXT,
+                    theme.color_text_normal,
                 )
 
             if pos.space == PositionSpace.WORLD:
@@ -866,13 +866,13 @@ class CanvasRenderer(esper.Processor):
                     img.texture, int(pos.x), int(pos.y), (255, 255, 255, 255)
                 )
 
-            outline_color = theme.THINGY_OUTLINE
+            outline_color = theme.color_thingy_outline
             for hov in self.world.try_component(ent, Hoverable):
                 if hov.hovering:
-                    outline_color = theme.THINGY_HOVERED_OUTLINE
+                    outline_color = theme.color_thingy_hovered_outline
             for sel in self.world.try_component(ent, Selectable):
                 if sel.selected:
-                    outline_color = theme.THINGY_SELECTED_OUTLINE
+                    outline_color = theme.color_thingy_selected_outline
 
             rect = pyray.Rectangle(
                 int(pos.x), int(pos.y), int(ext.width), int(ext.height),
@@ -915,9 +915,9 @@ class CanvasRenderer(esper.Processor):
                 if not grid_tool.active and not canvas.cell_grid_always_visible:
                     continue
 
-                cell_grid_color = theme.GRID_CELLS_SUBTLE
+                cell_grid_color = theme.color_grid_cells_subtle
                 if grid_tool.active and canvas.cell_grid_always_visible:
-                    cell_grid_color = theme.GRID_CELLS_OBVIOUS
+                    cell_grid_color = theme.color_grid_cells_obvious
 
                 if cells.x > 1:
                     for ix in range(1, cells.x):
@@ -1175,7 +1175,7 @@ class CellRefDropperTool:
             pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
             24,
             1,
-            theme.HUD_TEXT,
+            theme.color_text_normal,
         )
 
         pyray.begin_mode_2d(camera_2d)
@@ -1286,7 +1286,7 @@ class CellRefTool:
             pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
             24,
             1,
-            theme.HUD_TEXT,
+            theme.color_text_normal,
         )
 
 
@@ -1340,7 +1340,7 @@ class GridTool:
             pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
             24,
             1,
-            theme.HUD_TEXT,
+            theme.color_text_normal,
         )
 
         if not self.thingy:
@@ -1350,10 +1350,10 @@ class GridTool:
         cell_h = self.thingy.h / self.thingy.cells_y
 
         if cell_w.is_integer() and cell_h.is_integer():
-            text_color = theme.HUD_TEXT
+            text_color = theme.color_text_normal
             cell_dimensions = f"{int(cell_w)}x{int(cell_h)}"
         else:
-            text_color = theme.HUD_ERROR
+            text_color = theme.color_text_error
             cell_dimensions = f"{cell_w:.2f}x{cell_h:.2f}"
 
         text_offset_x = -1 if self.thingy.selected else 0
@@ -1401,10 +1401,10 @@ def main():
 
     world.create_entity(Name("Origin"), Position(), PositionMarker())
     world.create_entity(
-        Name("Minor grid"), BackgroundGrid(theme.GRID_MINOR), Extent(8, 8)
+        Name("Minor grid"), BackgroundGrid(theme.color_grid_minor), Extent(8, 8)
     )
     world.create_entity(
-        Name("Major grid"), BackgroundGrid(theme.GRID_MAJOR), Extent(32, 32)
+        Name("Major grid"), BackgroundGrid(theme.color_grid_major), Extent(32, 32)
     )
 
     # debug: a fun lil' testangle
@@ -1473,7 +1473,7 @@ def main():
 
     while not pyray.window_should_close():
         pyray.begin_drawing()
-        pyray.clear_background(theme.BACKGROUND)
+        pyray.clear_background(theme.color_background)
         world.process()
         draw_tool.update()
         grid_tool.update()
