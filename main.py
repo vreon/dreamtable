@@ -34,6 +34,14 @@ class SelectionType(Enum):
     CREATE = 2
 
 
+class ToolType(Enum):
+    PENCIL = 1
+    DROPPER = 2
+    CELL_REF = 3
+    CELL_REF_DROPPER = 4
+    GRID = 5
+
+
 Color = Tuple[int, int, int, int]
 
 
@@ -157,8 +165,18 @@ class Scalable:
 
 @dataclass
 class Button:
-    is_switch: bool = False
-    switched: bool = False
+    lit: bool = False
+
+
+@dataclass
+class Pressable:
+    pressed: bool = False
+    down: bool = False
+
+
+@dataclass
+class ToolSwitcher:
+    tool: ToolType
 
 
 @dataclass
@@ -195,15 +213,15 @@ class Theme:
     color_debug_magenta: Color = (255, 0, 255, 255)
     color_button_fill: Color = (32, 32, 32, 255)
     color_button_border: Color = (64, 64, 64, 255)
-    color_button_switched_fill: Color = (84, 30, 0, 255)
-    color_button_switched_border: Color = (164, 84, 30, 255)
+    color_button_lit_fill: Color = (84, 30, 0, 255)
+    color_button_lit_border: Color = (164, 84, 30, 255)
     color_button_hover_overlay: Color = (255, 255, 255, 32)
     font: Any = None  # TODO
 
 
 @dataclass
 class EditorMode:
-    tool: int = 0
+    tool: ToolType = ToolType.PENCIL
 
 
 @dataclass
@@ -955,22 +973,59 @@ class CanvasRenderer(esper.Processor):
                 pyray.end_mode_2d()
 
 
-# debug
-class EditorModeRenderer(esper.Processor):
+class EditorModeController(esper.Processor):
     def process(self):
-        for _, theme in self.world.get_component(Theme):
-            break
-        else:
-            return
-
         for _, mode in self.world.get_component(EditorMode):
             break
         else:
             return
 
-        pyray.draw_text_ex(
-            theme.font, str(mode.tool), (0, 0), 8, 1, theme.color_text_normal,
-        )
+        # Update the current mode if we pressed a tool switcher
+        for ent, (switcher, press) in self.world.get_components(
+            ToolSwitcher, Pressable
+        ):
+            if press.pressed:
+                mode.tool = switcher.tool
+
+        # Update the lit state of any buttons that represent the currently
+        # selected tool
+        for ent, (switcher, btn) in self.world.get_components(ToolSwitcher, Button):
+            btn.lit = mode.tool == switcher.tool
+
+
+class PressController(esper.Processor):
+    def process(self):
+        for _, (mouse, mouse_pos) in self.world.get_components(Mouse, Position):
+            break
+        else:
+            return
+
+        for ent, (pos, ext, press) in self.world.get_components(
+            Position, Extent, Pressable
+        ):
+            if pos.space == PositionSpace.WORLD:
+                mouse_pos_x = mouse.world_pos_x
+                mouse_pos_y = mouse.world_pos_y
+            elif pos.space == PositionSpace.SCREEN:
+                mouse_pos_x = mouse_pos.x
+                mouse_pos_y = mouse_pos.y
+            else:
+                continue
+
+            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+
+            press.pressed = False
+
+            if (
+                not mouse.reserved
+                and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
+                and point_rect_intersect(mouse_pos_x, mouse_pos_y, rect)
+            ):
+                press.pressed = True
+                press.down = True
+
+            if pyray.is_mouse_button_released(pyray.MOUSE_LEFT_BUTTON):
+                press.down = False
 
 
 class ButtonRenderer(esper.Processor):
@@ -997,9 +1052,9 @@ class ButtonRenderer(esper.Processor):
                 fill_color = theme.color_button_fill
                 border_color = theme.color_button_border
 
-                if btn.is_switch and btn.switched:
-                    fill_color = theme.color_button_switched_fill
-                    border_color = theme.color_button_switched_border
+                if btn.lit:
+                    fill_color = theme.color_button_lit_fill
+                    border_color = theme.color_button_lit_border
 
                 pyray.draw_rectangle_rec(rect, fill_color)
                 pyray.draw_rectangle_lines_ex(rect, 1, border_color)
@@ -1518,7 +1573,9 @@ def main():
     # debug: tool buttons
     world.create_entity(
         Name("Pencil"),
-        Button(is_switch=True, switched=True),
+        Button(),
+        ToolSwitcher(ToolType.PENCIL),
+        Pressable(),
         Position(20, -50),
         Extent(8, 8),
         Image(filename="resources/icons/pencil.png"),
@@ -1526,7 +1583,9 @@ def main():
     )
     world.create_entity(
         Name("Dropper"),
-        Button(is_switch=True),
+        Button(),
+        ToolSwitcher(ToolType.DROPPER),
+        Pressable(),
         Position(28, -50),
         Extent(8, 8),
         Image(filename="resources/icons/dropper.png"),
@@ -1541,15 +1600,16 @@ def main():
     world.add_processor(JitterController())
     world.add_processor(DragController())
     world.add_processor(HoverController())
+    world.add_processor(PressController())
     world.add_processor(SelectionRegionController())
     world.add_processor(ImageController())
+    world.add_processor(EditorModeController())
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
     world.add_processor(SelectionRegionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
     world.add_processor(ButtonRenderer())
-    world.add_processor(EditorModeRenderer())
     world.add_processor(SelectableDeleteController())
     world.add_processor(ImageDeleteController())
     world.add_processor(FinalDeleteController())
