@@ -106,6 +106,12 @@ class PositionMarker:
 
 
 @dataclass
+class CellGrid:
+    x: int = 0
+    y: int = 0
+
+
+@dataclass
 class BackgroundGrid:
     color: Color
     line_width: float = 2.0
@@ -171,6 +177,7 @@ class Scalable:
 @dataclass
 class Canvas:
     color: Color = (0, 0, 0, 255)
+    cell_grid_always_visible: bool = False
 
 
 @dataclass
@@ -178,6 +185,7 @@ class Image:
     image: Any = None
     texture: Any = None
     filename: str = None
+    dirty: bool = False
 
 
 @dataclass
@@ -250,7 +258,7 @@ class DeltaPositionController(esper.Processor):
 
 
 class DebugEntityRenderer(esper.Processor):
-    """Draws bounding boxes, for debugging."""
+    """Draws a basic spatial representation of the entity, for debugging."""
 
     def process(self):
         for _, cam in self.world.get_component(Camera):
@@ -272,35 +280,37 @@ class DebugEntityRenderer(esper.Processor):
             if pos.space == PositionSpace.WORLD:
                 pyray.begin_mode_2d(cam.camera_2d)
 
-            color = theme.DEBUG_MAGENTA
-            for sel in self.world.try_component(ent, Selectable):
-                if sel.selected:
-                    color = theme.SELECTION_OUTLINE
-
-            pyray.draw_rectangle_lines_ex(
-                pyray.Rectangle(
-                    int(pos.x), int(pos.y), int(ext.width), int(ext.height)
-                ),
-                1,
-                color,
+            rect = pyray.Rectangle(
+                int(pos.x), int(pos.y), int(ext.width), int(ext.height)
             )
+            color = theme.DEBUG_MAGENTA
+
+            pyray.draw_rectangle_lines_ex(rect, 1, color)
+
+            outline_color = None
+            outline_rect = get_outline_rect(rect)
 
             for hov in self.world.try_component(ent, Hoverable):
                 if hov.hovering:
-                    pyray.draw_rectangle_lines_ex(
-                        pyray.Rectangle(
-                            int(pos.x) - 1,
-                            int(pos.y) - 1,
-                            int(ext.width) + 2,
-                            int(ext.height) + 2,
-                        ),
-                        1,
-                        theme.THINGY_HOVERED_OUTLINE,
-                    )
+                    outline_color = theme.THINGY_HOVERED_OUTLINE
+
+            for sel in self.world.try_component(ent, Selectable):
+                if sel.selected:
+                    outline_color = theme.SELECTION_OUTLINE
+
+            if outline_color:
+                pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
 
             for name in self.world.try_component(ent, Name):
+                font_size = 8
+                spacing = 1
+                measurement = pyray.measure_text_ex(
+                    theme.font, name.name, font_size, spacing
+                )
+                x = (pos.x + ext.width / 2) - measurement.x / 2
+                y = (pos.y + ext.height / 2) - measurement.y / 2
                 pyray.draw_text_ex(
-                    theme.font, name.name, (int(pos.x), int(pos.y)), 8, 1, color,
+                    theme.font, name.name, (int(x), int(y)), font_size, spacing, color,
                 )
 
             if pos.space == PositionSpace.WORLD:
@@ -439,7 +449,7 @@ class CameraController(esper.Processor):
 
             cam.camera_2d.zoom += cam.zoom_velocity * cam.camera_2d.zoom
             cam.zoom_velocity *= cam.zoom_friction
-            if abs(cam.zoom_velocity) < 0.005:  # todo EPSILON
+            if abs(cam.zoom_velocity) < EPSILON:
                 cam.zoom_velocity = 0
 
 
@@ -512,7 +522,6 @@ class SelectionRegionController(esper.Processor):
                     Position(space=space),
                     Extent(),
                     SelectionRegion(start_x=mouse_pos_x, start_y=mouse_pos_y),
-                    PositionMarker(),
                 )
             elif pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
                 mouse.reserved = True
@@ -539,6 +548,7 @@ class SelectionRegionController(esper.Processor):
             elif pos.space == PositionSpace.SCREEN:
                 selectables_screen.append((selectable, rect))
 
+        # Update pos/ext, selectables, and handle release actions
         for ent, (pos, ext, selection) in self.world.get_components(
             Position, Extent, SelectionRegion
         ):
@@ -608,10 +618,12 @@ class SelectionRegionController(esper.Processor):
                             draw_tool.color_secondary,
                         )
                     ),
+                    CellGrid(3, 3),
                     Draggable(),
                     Hoverable(),
                     Selectable(),
                     Deletable(),
+                    DebugEntity(),
                 )
                 self.world.delete_entity(ent)
                 continue
@@ -664,9 +676,7 @@ class SelectionRegionRenderer(esper.Processor):
             fill_rect = pyray.Rectangle(int(x), int(y), int(width), int(height))
             pyray.draw_rectangle_rec(fill_rect, fill_color)
 
-            outline_rect = pyray.Rectangle(
-                int(x) - 1, int(y) - 1, int(width) + 2, int(height) + 1
-            )
+            outline_rect = get_outline_rect(fill_rect)
             pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
 
             if labeled:
@@ -773,13 +783,17 @@ class FinalDeleteController(esper.Processor):
                 self.world.delete_entity(ent)
 
 
-class ImageLoadController(esper.Processor):
-    """Load images and create textures."""
+class ImageController(esper.Processor):
+    """Load images, create textures, and keep them in sync."""
 
     def process(self):
         for ent, img in self.world.get_component(Image):
             if not img.image and img.filename:
                 img.image = pyray.load_image(img.filename)
+
+                image_format = pyray.UNCOMPRESSED_R8G8B8A8  # default apparently
+                if img.image.format != image_format:
+                    pyray.image_format(pyray.pointer(img.image), image_format)
 
                 for ext in self.world.try_component(ent, Extent):
                     ext.width = img.image.width
@@ -787,6 +801,10 @@ class ImageLoadController(esper.Processor):
 
             if not img.texture:
                 img.texture = pyray.load_texture_from_image(img.image)
+
+            if img.texture and img.dirty:
+                pyray.update_texture(img.texture, pyray.get_image_date(img.image))
+                img.dirty = False
 
 
 class ImageDeleteController(esper.Processor):
@@ -804,6 +822,29 @@ class ImageDeleteController(esper.Processor):
             if img.image:
                 pyray.unload_image(img.image)
                 img.image = None
+
+
+# debug
+class CanvasExportController(esper.Processor):
+    """Export selected Canvas images to a directory"""
+
+    def process(self):
+        is_control_down = pyray.is_key_down(
+            pyray.KEY_LEFT_CONTROL
+        ) or pyray.is_key_down(pyray.KEY_RIGHT_CONTROL)
+
+        if not (is_control_down and pyray.is_key_pressed(pyray.KEY_S)):
+            return
+
+        for _, (_, sel, img) in self.world.get_components(Canvas, Selectable, Image):
+            if not sel.selected:
+                continue
+
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            filename = (
+                f"save/thingy_{img.image.width}x{img.image.height}_{timestamp}.png"
+            )
+            pyray.export_image(img.image, filename)
 
 
 class CanvasRenderer(esper.Processor):
@@ -846,16 +887,72 @@ class CanvasRenderer(esper.Processor):
                 if sel.selected:
                     outline_color = theme.THINGY_SELECTED_OUTLINE
 
-            pyray.draw_rectangle_lines_ex(
-                pyray.Rectangle(
-                    int(pos.x) - 1,
-                    int(pos.y) - 1,
-                    int(ext.width) + 2,
-                    int(ext.height) + 2,
-                ),
-                1,
-                outline_color,
+            rect = pyray.Rectangle(
+                int(pos.x), int(pos.y), int(ext.width), int(ext.height),
             )
+            outline_rect = get_outline_rect(rect)
+            pyray.draw_rectangle_lines_ex(
+                outline_rect, 1, outline_color,
+            )
+
+            # todo: draw ref'd cells
+            # for cell_y, cell_ref_row in enumerate(self.cell_refs):
+            #     for cell_x, cell_ref in enumerate(cell_ref_row):
+            #         if not cell_ref:
+            #             continue
+
+            #         source, source_cell_x, source_cell_y = cell_ref
+
+            #         # draw refs as samples from source
+            #         pyray.draw_texture_pro(
+            #             source.texture,
+            #             pyray.Rectangle(
+            #                 int(source.w * source_cell_x / source.cells_x),
+            #                 int(source.h * source_cell_y / source.cells_y),
+            #                 int(source.w / source.cells_x),
+            #                 int(source.h / source.cells_y),
+            #             ),
+            #             pyray.Rectangle(
+            #                 self.x + int(self.w * cell_x / self.cells_x),
+            #                 self.y + int(self.h * cell_y / self.cells_y),
+            #                 int(self.w / self.cells_x),
+            #                 int(self.h / self.cells_y),
+            #             ),
+            #             pyray.Vector2(0, 0),
+            #             0,
+            #             (255, 255, 255, 255),
+            #         )
+
+            # Draw the CellGrid, if this Canvas has one
+            for cells in self.world.try_component(ent, CellGrid):
+                if not grid_tool.active and not canvas.cell_grid_always_visible:
+                    continue
+
+                cell_grid_color = theme.GRID_CELLS_SUBTLE
+                if grid_tool.active and canvas.cell_grid_always_visible:
+                    cell_grid_color = theme.GRID_CELLS_OBVIOUS
+
+                if cells.x > 1:
+                    for ix in range(1, cells.x):
+                        x = pos.x + ix / cells.x * ext.width
+                        pyray.draw_line(
+                            int(x),
+                            int(pos.y),
+                            int(x),
+                            int(pos.y + ext.height),
+                            cell_grid_color,
+                        )
+
+                if cells.y > 1:
+                    for iy in range(1, cells.y):
+                        y = pos.y + iy / cells.y * ext.height
+                        pyray.draw_line(
+                            int(pos.x),
+                            int(y),
+                            int(pos.x + ext.width),
+                            int(y),
+                            cell_grid_color,
+                        )
 
             if pos.space == PositionSpace.WORLD:
                 pyray.end_mode_2d()
@@ -898,6 +995,10 @@ def aabb(x1, y1, x2, y2, snap_x=0, snap_y=0):
         height = math.ceil(height / snap_y) * snap_y
 
     return pyray.Rectangle(x1, y1, width, height)
+
+
+def get_outline_rect(rect):
+    return pyray.Rectangle(rect.x - 1, rect.y - 1, rect.width + 2, rect.height + 2)
 
 
 def make_rect_extent_positive(rect):
@@ -1283,143 +1384,6 @@ class GridTool:
         pyray.end_mode_2d()
 
 
-class CanvasThingy:
-    def __init__(
-        self,
-        x=0,
-        y=0,
-        w=None,
-        h=None,
-        cells_x=1,
-        cells_y=1,
-        image=None,
-        color=(0, 0, 0, 255),
-    ):
-        if not w and not h and not image:
-            raise ValueError("Expected (w, h) or an image")
-
-        self.x = x
-        self.y = y
-        # self.image = pyray.gen_image_color(w, h, color)
-
-        # debug: create interesting default images
-        self.image = (
-            image
-            or random.choice(
-                [
-                    lambda: pyray.gen_image_color(w, h, color),
-                    # lambda: pyray.gen_image_white_noise(w, h, 0.05),
-                    # lambda: pyray.gen_image_perlin_noise(w, h, 0, 0, 5),
-                ]
-            )()
-        )
-
-        image_format = pyray.UNCOMPRESSED_R8G8B8A8  # default apparently
-        if self.image.format != image_format:
-            pyray.image_format(pyray.pointer(self.image), image_format)
-
-        self.w = self.image.width
-        self.h = self.image.height
-        self.cells_x = cells_x
-        self.cells_y = cells_y
-        self.cells_visible = False
-        self.cell_refs = [
-            [None for x in range(self.cells_x)] for y in range(self.cells_y)
-        ]
-
-        self.texture = pyray.load_texture_from_image(self.image)
-        self.selected = False
-        self.dirty = False
-
-    def update(self, camera_2d):
-        if self.selected:
-            # debug: copy to hud font, lol
-            # if pyray.is_key_pressed(pyray.KEY_F):
-            #     image = pyray.image_copy(
-            #         self.image
-            #     )  # raylib unloads the image afterward
-            #     pyray.unload_font(hud.font)
-            #     hud.font = pyray.load_font_from_image(image, (255, 0, 255, 255), 32)
-
-            # debug: save to file
-            if (
-                pyray.is_key_down(pyray.KEY_LEFT_CONTROL)
-                or pyray.is_key_down(pyray.KEY_RIGHT_CONTROL)
-            ) and pyray.is_key_pressed(pyray.KEY_S):
-                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                filename = f"save/thingy_{self.w}x{self.h}_{timestamp}.png"
-                pyray.export_image(self.image, filename)
-
-        if not self.dirty:
-            return
-
-        pyray.update_texture(self.texture, pyray.get_image_data(self.image))
-
-    def draw(self, hovered_thingy):
-        tint = (255, 255, 255, 255)
-        pyray.draw_texture(self.texture, self.x, self.y, tint)
-
-        if self.selected:
-            outline_color = OldTheme.THINGY_SELECTED_OUTLINE
-        elif self is hovered_thingy:
-            outline_color = OldTheme.THINGY_HOVERED_OUTLINE
-        else:
-            outline_color = OldTheme.THINGY_OUTLINE
-
-        pyray.draw_rectangle_lines_ex(
-            pyray.Rectangle(self.x - 1, self.y - 1, self.w + 2, self.h + 2),
-            1,
-            outline_color,
-        )
-
-        for cell_y, cell_ref_row in enumerate(self.cell_refs):
-            for cell_x, cell_ref in enumerate(cell_ref_row):
-                if not cell_ref:
-                    continue
-
-                source, source_cell_x, source_cell_y = cell_ref
-
-                # draw refs as samples from source
-                pyray.draw_texture_pro(
-                    source.texture,
-                    pyray.Rectangle(
-                        int(source.w * source_cell_x / source.cells_x),
-                        int(source.h * source_cell_y / source.cells_y),
-                        int(source.w / source.cells_x),
-                        int(source.h / source.cells_y),
-                    ),
-                    pyray.Rectangle(
-                        self.x + int(self.w * cell_x / self.cells_x),
-                        self.y + int(self.h * cell_y / self.cells_y),
-                        int(self.w / self.cells_x),
-                        int(self.h / self.cells_y),
-                    ),
-                    pyray.Vector2(0, 0),
-                    0,
-                    (255, 255, 255, 255),
-                )
-
-        if self.cells_visible or grid_tool.active:
-            color = (
-                OldTheme.GRID_CELLS_OBVIOUS
-                if self.cells_visible and grid_tool.active
-                else OldTheme.GRID_CELLS_SUBTLE
-            )
-            if self.cells_x > 1:
-                for ix in range(1, self.cells_x):
-                    x = self.x + ix / self.cells_x * self.w
-                    pyray.draw_line(int(x), self.y, int(x), self.y + self.h, color)
-
-            if self.cells_y > 1:
-                for iy in range(1, self.cells_y):
-                    y = self.y + iy / self.cells_y * self.h
-                    pyray.draw_line(self.x, int(y), self.x + self.w, int(y), color)
-
-    def destroy(self):
-        pyray.unload_texture(self.texture)
-        pyray.unload_image(self.image)
-
-
 ################################################################################
 
 
@@ -1494,7 +1458,6 @@ def main():
     )
 
     # Register controllers and renderers (flavors of processors)
-    world.add_processor(ImageLoadController())
     world.add_processor(MouseController())
     world.add_processor(CameraController())
     world.add_processor(MotionController())
@@ -1503,6 +1466,7 @@ def main():
     world.add_processor(DragController())
     world.add_processor(HoverController())
     world.add_processor(SelectionRegionController())
+    world.add_processor(ImageController())
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
     world.add_processor(SelectionRegionRenderer())
