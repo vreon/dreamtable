@@ -37,25 +37,6 @@ class SelectionType(Enum):
 Color = Tuple[int, int, int, int]
 
 
-class OldTheme:
-    BACKGROUND = (9, 12, 17, 255)
-    POSITION_MARKER = (164, 84, 30, 255)
-    GRID_CELLS_SUBTLE = (255, 255, 255, 32)
-    GRID_CELLS_OBVIOUS = (255, 255, 255, 64)
-    GRID_MINOR = (68, 93, 144, 16)
-    GRID_MAJOR = (68, 93, 144, 32)
-    HUD_TEXT = (255, 255, 255, 255)
-    HUD_ERROR = (164, 84, 30, 255)
-    CREATE_OUTLINE = (0, 255, 0, 128)
-    CREATE_FILL = (0, 255, 0, 32)
-    SELECTION_OUTLINE = (68, 93, 144, 128)
-    SELECTION_FILL = (68, 93, 144, 32)
-    THINGY_OUTLINE = (68, 93, 144, 16)
-    THINGY_HOVERED_OUTLINE = (68, 93, 144, 48)
-    THINGY_SELECTED_OUTLINE = (68, 93, 144, 128)
-    DEBUG_MAGENTA = (255, 0, 255, 255)
-
-
 ################################################################################
 # Components
 
@@ -1181,7 +1162,7 @@ class CellRefDropperTool:
             )
             cell_ref_tool.source_secondary = thingy
 
-    def draw(self, camera_2d, font):
+    def draw(self, camera_2d, theme):
         if not self.active:
             return
 
@@ -1189,12 +1170,12 @@ class CellRefDropperTool:
 
         # debug: temp ref icon
         pyray.draw_text_ex(
-            font,
+            theme.font,
             b"? ->",
             pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
             24,
             1,
-            OldTheme.HUD_TEXT,
+            theme.HUD_TEXT,
         )
 
         pyray.begin_mode_2d(camera_2d)
@@ -1292,7 +1273,7 @@ class CellRefTool:
         if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):
             thingy.cell_refs[cell_y][cell_x] = None
 
-    def draw(self, camera_2d, font):
+    def draw(self, camera_2d, theme):
         if not self.active:
             return
 
@@ -1300,12 +1281,12 @@ class CellRefTool:
 
         # debug: temp ref icon
         pyray.draw_text_ex(
-            font,
+            theme.font,
             b"  -> !",
             pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
             24,
             1,
-            OldTheme.HUD_TEXT,
+            theme.HUD_TEXT,
         )
 
 
@@ -1346,7 +1327,7 @@ class GridTool:
                 [None for x in range(thingy.cells_x)] for y in range(thingy.cells_y)
             ]
 
-    def draw(self, camera_2d, font):
+    def draw(self, camera_2d, theme):
         if not self.active:
             return
 
@@ -1354,12 +1335,12 @@ class GridTool:
 
         # debug: temp grid icon
         pyray.draw_text_ex(
-            font,
+            theme.font,
             b"#",
             pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
             24,
             1,
-            OldTheme.HUD_TEXT,
+            theme.HUD_TEXT,
         )
 
         if not self.thingy:
@@ -1369,10 +1350,10 @@ class GridTool:
         cell_h = self.thingy.h / self.thingy.cells_y
 
         if cell_w.is_integer() and cell_h.is_integer():
-            text_color = OldTheme.HUD_TEXT
+            text_color = theme.HUD_TEXT
             cell_dimensions = f"{int(cell_w)}x{int(cell_h)}"
         else:
-            text_color = OldTheme.HUD_ERROR
+            text_color = theme.HUD_ERROR
             cell_dimensions = f"{cell_w:.2f}x{cell_h:.2f}"
 
         text_offset_x = -1 if self.thingy.selected else 0
@@ -1380,7 +1361,7 @@ class GridTool:
 
         pyray.begin_mode_2d(camera_2d)
         pyray.draw_text_ex(
-            font,
+            theme.font,
             str(f"{self.thingy.cells_x}x{self.thingy.cells_y} @ {cell_dimensions}"),
             pyray.Vector2(self.thingy.x + text_offset_x, self.thingy.y + text_offset_y),
             8,
@@ -1500,10 +1481,10 @@ def main():
         cell_ref_tool.update()
         cell_ref_dropper_tool.update()
         draw_tool.draw()
-        grid_tool.draw(camera_2d, theme.font)
+        grid_tool.draw(camera_2d, theme)
         dropper_tool.draw()
-        cell_ref_tool.draw(camera_2d, theme.font)
-        cell_ref_dropper_tool.draw(camera_2d, theme.font)
+        cell_ref_tool.draw(camera_2d, theme)
+        cell_ref_dropper_tool.draw(camera_2d, theme)
         pyray.end_drawing()
 
     pyray.close_window()
