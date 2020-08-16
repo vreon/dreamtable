@@ -125,7 +125,7 @@ class SelectionRegion:
 
 @dataclass
 class Hoverable:
-    hovering: bool = False
+    hovered: bool = False
 
 
 @dataclass
@@ -153,6 +153,12 @@ class Resizable:
 @dataclass
 class Scalable:
     scale: float = 1.0
+
+
+@dataclass
+class Button:
+    is_switch: bool = False
+    switched: bool = False
 
 
 @dataclass
@@ -187,6 +193,11 @@ class Theme:
     color_thingy_hovered_outline: Color = (68, 93, 144, 48)
     color_thingy_selected_outline: Color = (68, 93, 144, 128)
     color_debug_magenta: Color = (255, 0, 255, 255)
+    color_button_fill: Color = (32, 32, 32, 255)
+    color_button_border: Color = (64, 64, 64, 255)
+    color_button_switched_fill: Color = (84, 30, 0, 255)
+    color_button_switched_border: Color = (164, 84, 30, 255)
+    color_button_hover_overlay: Color = (255, 255, 255, 32)
     font: Any = None  # TODO
 
 
@@ -276,7 +287,7 @@ class DebugEntityRenderer(esper.Processor):
             outline_rect = get_outline_rect(rect)
 
             for hov in self.world.try_component(ent, Hoverable):
-                if hov.hovering:
+                if hov.hovered:
                     outline_color = theme.color_thingy_hovered_outline
 
             for sel in self.world.try_component(ent, Selectable):
@@ -478,10 +489,10 @@ class SelectionRegionController(esper.Processor):
             return
 
         # Are we hovering over anything? If so, we can't create selections
-        hovering = False
+        hovering_any = False
         for ent, hover in self.world.get_component(Hoverable):
-            if hover.hovering:
-                hovering = True
+            if hover.hovered:
+                hovering_any = True
 
                 # If we just clicked, select only this.
                 # todo if we're holding shift, don't deselect other stuff
@@ -492,7 +503,7 @@ class SelectionRegionController(esper.Processor):
                 break
 
         # Create new selections
-        if not hovering and not mouse.reserved:
+        if not hovering_any and not mouse.reserved:
             if True:  # debug
                 # new selections go into world space
                 mouse_pos_x = mouse.world_pos_x
@@ -701,7 +712,7 @@ class HoverController(esper.Processor):
                 continue
 
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
-            hov.hovering = point_rect_intersect(mouse_pos_x, mouse_pos_y, rect)
+            hov.hovered = point_rect_intersect(mouse_pos_x, mouse_pos_y, rect)
 
 
 class DragController(esper.Processor):
@@ -867,7 +878,7 @@ class CanvasRenderer(esper.Processor):
 
             outline_color = theme.color_thingy_outline
             for hov in self.world.try_component(ent, Hoverable):
-                if hov.hovering:
+                if hov.hovered:
                     outline_color = theme.color_thingy_hovered_outline
             for sel in self.world.try_component(ent, Selectable):
                 if sel.selected:
@@ -964,10 +975,47 @@ class EditorModeRenderer(esper.Processor):
 
 class ButtonRenderer(esper.Processor):
     def process(self):
+        camera_2d = None
+        for _, cam in self.world.get_component(Camera):
+            if cam.active:
+                camera_2d = cam.camera_2d
+                break
+
         for _, theme in self.world.get_component(Theme):
             break
         else:
             return
+
+        for ent, (pos, ext, btn) in self.world.get_components(Position, Extent, Button):
+            if camera_2d and pos.space == PositionSpace.WORLD:
+                pyray.begin_mode_2d(camera_2d)
+
+                rect = pyray.Rectangle(
+                    int(pos.x), int(pos.y), int(ext.width), int(ext.height),
+                )
+
+                fill_color = theme.color_button_fill
+                border_color = theme.color_button_border
+
+                if btn.is_switch and btn.switched:
+                    fill_color = theme.color_button_switched_fill
+                    border_color = theme.color_button_switched_border
+
+                pyray.draw_rectangle_rec(rect, fill_color)
+                pyray.draw_rectangle_lines_ex(rect, 1, border_color)
+
+                for hov in self.world.try_component(ent, Hoverable):
+                    if hov.hovered:
+                        pyray.draw_rectangle_rec(rect, theme.color_button_hover_overlay)
+
+                for img in self.world.try_component(ent, Image):
+                    if img.texture:
+                        pyray.draw_texture(
+                            img.texture, int(pos.x), int(pos.y), (255, 255, 255, 255)
+                        )
+
+            if camera_2d and pos.space == PositionSpace.WORLD:
+                pyray.end_mode_2d()
 
 
 ################################################################################
@@ -1467,6 +1515,24 @@ def main():
         Deletable(),
     )
 
+    # debug: tool buttons
+    world.create_entity(
+        Name("Pencil"),
+        Button(is_switch=True, switched=True),
+        Position(20, -50),
+        Extent(8, 8),
+        Image(filename="resources/icons/pencil.png"),
+        Hoverable(),
+    )
+    world.create_entity(
+        Name("Dropper"),
+        Button(is_switch=True),
+        Position(28, -50),
+        Extent(8, 8),
+        Image(filename="resources/icons/pencil.png"),
+        Hoverable(),
+    )
+
     # Register controllers and renderers (flavors of processors)
     world.add_processor(MouseController())
     world.add_processor(CameraController())
@@ -1482,6 +1548,7 @@ def main():
     world.add_processor(SelectionRegionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
+    world.add_processor(ButtonRenderer())
     world.add_processor(EditorModeRenderer())
     world.add_processor(SelectableDeleteController())
     world.add_processor(ImageDeleteController())
