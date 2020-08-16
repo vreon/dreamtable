@@ -35,11 +35,12 @@ class SelectionType(Enum):
 
 
 class ToolType(Enum):
-    PENCIL = 1
-    DROPPER = 2
-    CELL_REF = 3
-    CELL_REF_DROPPER = 4
-    GRID = 5
+    MOVE = 1
+    PENCIL = 2
+    DROPPER = 3
+    GRID = 4
+    CELL_REF = 5
+    CELL_REF_DROPPER = 6
 
 
 Color = Tuple[int, int, int, int]
@@ -221,7 +222,7 @@ class Theme:
 
 @dataclass
 class EditorMode:
-    tool: ToolType = ToolType.PENCIL
+    tool: ToolType = ToolType.MOVE
 
 
 @dataclass
@@ -1045,29 +1046,29 @@ class ButtonRenderer(esper.Processor):
             if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.begin_mode_2d(camera_2d)
 
-                rect = pyray.Rectangle(
-                    int(pos.x), int(pos.y), int(ext.width), int(ext.height),
-                )
+            rect = pyray.Rectangle(
+                int(pos.x), int(pos.y), int(ext.width), int(ext.height),
+            )
 
-                fill_color = theme.color_button_fill
-                border_color = theme.color_button_border
+            fill_color = theme.color_button_fill
+            border_color = theme.color_button_border
 
-                if btn.lit:
-                    fill_color = theme.color_button_lit_fill
-                    border_color = theme.color_button_lit_border
+            if btn.lit:
+                fill_color = theme.color_button_lit_fill
+                border_color = theme.color_button_lit_border
 
-                pyray.draw_rectangle_rec(rect, fill_color)
-                pyray.draw_rectangle_lines_ex(rect, 1, border_color)
+            pyray.draw_rectangle_rec(rect, fill_color)
+            pyray.draw_rectangle_lines_ex(rect, 1, border_color)
 
-                for hov in self.world.try_component(ent, Hoverable):
-                    if hov.hovered:
-                        pyray.draw_rectangle_rec(rect, theme.color_button_hover_overlay)
+            for hov in self.world.try_component(ent, Hoverable):
+                if hov.hovered:
+                    pyray.draw_rectangle_rec(rect, theme.color_button_hover_overlay)
 
-                for img in self.world.try_component(ent, Image):
-                    if img.texture:
-                        pyray.draw_texture(
-                            img.texture, int(pos.x), int(pos.y), (255, 255, 255, 255)
-                        )
+            for img in self.world.try_component(ent, Image):
+                if img.texture:
+                    pyray.draw_texture(
+                        img.texture, int(pos.x), int(pos.y), (255, 255, 255, 255)
+                    )
 
             if camera_2d and pos.space == PositionSpace.WORLD:
                 pyray.end_mode_2d()
@@ -1571,6 +1572,16 @@ def main():
     )
 
     # debug: tool buttons
+    world.create_entity(
+        Name("Move"),
+        Button(),
+        ToolSwitcher(ToolType.MOVE),
+        Pressable(),
+        Position(12, -50),
+        Extent(8, 8),
+        Image(filename="resources/icons/hand.png"),
+        Hoverable(),
+    )
     world.create_entity(
         Name("Pencil"),
         Button(),
