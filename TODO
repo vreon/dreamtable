@@ -18,8 +18,10 @@ dream table (working title)
   x draw tool
   x dropper tool
   x grid tool
+  > ECS port
+    - screen space should have a camera
   - cellref tool
-  - modal tools / tool thingy
+  x modal tools / tool thingy
   > right click drag on canvas thingies to resize
   - scaling (s + wheel)
   - import via drag and drop

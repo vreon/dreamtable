@@ -277,16 +277,8 @@ class DebugEntityRenderer(esper.Processor):
     """Draws a basic spatial representation of the entity, for debugging."""
 
     def process(self):
-        camera_2d = None
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                camera_2d = cam.camera_2d
-                break
-
-        for _, theme in self.world.get_component(Theme):
-            break
-        else:
-            # Skip rendering if we don't know which colors to draw
+        camera_2d = get_active_camera_2d(self.world)
+        if not (theme := get_theme(self.world)):
             return
 
         for ent, (_, pos, ext) in self.world.get_components(
@@ -360,14 +352,9 @@ class BackgroundGridRenderer(esper.Processor):
             y += step
 
     def process(self):
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                break
-        else:
-            # Skip rendering if there's no active camera
+        if not (camera_2d := get_active_camera_2d(self.world)):
             return
 
-        camera_2d = cam.camera_2d
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
         for _, (grid, ext) in self.world.get_components(BackgroundGrid, Extent):
@@ -391,21 +378,13 @@ class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
     def process(self):
-        camera_2d = None
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                camera_2d = cam.camera_2d
-                break
-
-        for _, theme in self.world.get_component(Theme):
-            break
-        else:
-            # Skip rendering if we don't know which colors to draw
+        camera_2d = get_active_camera_2d(self.world)
+        if not (theme := get_theme(self.world)):
             return
 
         for _, (pos, mark) in self.world.get_components(Position, PositionMarker):
             if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(cam.camera_2d)
+                pyray.begin_mode_2d(camera_2d)
 
             pyray.draw_line_v(
                 (int(pos.x - mark.size), int(pos.y)),
@@ -471,12 +450,7 @@ class MouseController(esper.Processor):
     """Updates Mouse state."""
 
     def process(self):
-        camera_2d = None
-
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                camera_2d = cam.camera_2d
-                break
+        camera_2d = get_active_camera_2d(self.world)
 
         for _, (pos, mouse) in self.world.get_components(Position, Mouse):
             # I don't know how a Mouse Position could be in world space but hey
@@ -651,21 +625,14 @@ class SelectionRegionRenderer(esper.Processor):
     """Draws selection regions."""
 
     def process(self):
-        camera_2d = None
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                camera_2d = cam.camera_2d
-                break
-
-        theme = None
-        for _, theme in self.world.get_component(Theme):
-            break
+        camera_2d = get_active_camera_2d(self.world)
+        theme = get_theme(self.world)
 
         for _, (pos, ext, sel) in self.world.get_components(
             Position, Extent, SelectionRegion
         ):
             if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(cam.camera_2d)
+                pyray.begin_mode_2d(camera_2d)
 
             if sel.type == SelectionType.NORMAL:
                 fill_color = theme.color_selection_normal_fill
@@ -868,23 +835,15 @@ class CanvasRenderer(esper.Processor):
     """Draws Canvases and their images."""
 
     def process(self):
-        camera_2d = None
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                camera_2d = cam.camera_2d
-                break
-
-        for _, theme in self.world.get_component(Theme):
-            break
-        else:
-            # Skip rendering if we don't know which colors to draw
+        camera_2d = get_active_camera_2d(self.world)
+        if not (theme := get_theme(self.world)):
             return
 
         for ent, (canvas, pos, ext) in self.world.get_components(
             Canvas, Position, Extent
         ):
             if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(cam.camera_2d)
+                pyray.begin_mode_2d(camera_2d)
 
             # draw texture if it has an image
             # it always should, but who knows.
@@ -1031,15 +990,8 @@ class PressController(esper.Processor):
 
 class ButtonRenderer(esper.Processor):
     def process(self):
-        camera_2d = None
-        for _, cam in self.world.get_component(Camera):
-            if cam.active:
-                camera_2d = cam.camera_2d
-                break
-
-        for _, theme in self.world.get_component(Theme):
-            break
-        else:
+        camera_2d = get_active_camera_2d(self.world)
+        if not (theme := get_theme(self.world)):
             return
 
         for ent, (pos, ext, btn) in self.world.get_components(Position, Extent, Button):
@@ -1125,6 +1077,22 @@ def make_rect_extent_positive(rect):
     if rect.height < 0:
         rect.height *= -1
         rect.y -= rect.height
+
+
+################################################################################
+# "Global component" fetching helpers
+# Not sure if I like these...
+
+
+def get_active_camera_2d(world):
+    for _, cam in world.get_component(Camera):
+        if cam.active:
+            return cam.camera_2d
+
+
+def get_theme(world):
+    for _, theme in world.get_component(Theme):
+        return theme
 
 
 ################################################################################
@@ -1626,10 +1594,7 @@ def main():
     world.add_processor(FinalDeleteController())
 
     # todo phase this out
-    for _, cam in world.get_component(Camera):
-        if cam.active:
-            break
-    else:
+    if not (camera_2d := get_active_camera_2d(world)):
         raise RuntimeError("No active camera!")
 
     while not pyray.window_should_close():
@@ -1642,10 +1607,10 @@ def main():
         cell_ref_tool.update()
         cell_ref_dropper_tool.update()
         draw_tool.draw()
-        grid_tool.draw(cam.camera_2d, theme)
+        grid_tool.draw(camera_2d, theme)
         dropper_tool.draw()
-        cell_ref_tool.draw(cam.camera_2d, theme)
-        cell_ref_dropper_tool.draw(cam.camera_2d, theme)
+        cell_ref_tool.draw(camera_2d, theme)
+        cell_ref_dropper_tool.draw(camera_2d, theme)
         pyray.end_drawing()
 
     pyray.close_window()
