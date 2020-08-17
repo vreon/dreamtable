@@ -124,7 +124,7 @@ class Mouse:
 
 
 @dataclass
-class SelectionRegion:
+class RectangularSelection:
     type: SelectionType = SelectionType.NORMAL
     start_x: float = 0.0
     start_y: float = 0.0
@@ -220,7 +220,17 @@ class Theme:
 
 @dataclass
 class EditorMode:
+    # The currently active tool
     tool: ToolType = ToolType.MOVE
+
+    # Depending on which tool is active, the user may be able to temporarily
+    # switch to another tool by holding a key combination (e.g. PENCIL + Alt =
+    # DROPPER). This attribute stores which tool we will return to when the key
+    # combo is released.
+    underlying_tool: ToolType = None
+
+    color_primary: Color = (255, 255, 255, 255)
+    color_secondary: Color = (0, 0, 0, 255)
 
 
 @dataclass
@@ -448,7 +458,7 @@ class MouseController(esper.Processor):
             pos.y = mouse_pos.y
 
 
-class SelectionRegionController(esper.Processor):
+class RectangularSelectionController(esper.Processor):
     """Updates selection regions."""
 
     def process(self):
@@ -456,10 +466,9 @@ class SelectionRegionController(esper.Processor):
         SNAP_X = 8
         SNAP_Y = 8
 
-        for _, (mouse, mouse_pos) in self.world.get_components(Mouse, Position):
-            break
-        else:
+        if not (mouse_comps := get_mouse_and_pos(self.world)):
             return
+        mouse, mouse_pos = mouse_comps
 
         cameras = get_cameras(self.world)
 
@@ -491,7 +500,7 @@ class SelectionRegionController(esper.Processor):
                     Name("Selection region"),
                     Position(space=space),
                     Extent(),
-                    SelectionRegion(start_x=start_pos.x, start_y=start_pos.y),
+                    RectangularSelection(start_x=start_pos.x, start_y=start_pos.y),
                 )
             elif pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
                 mouse.reserved = True
@@ -499,7 +508,7 @@ class SelectionRegionController(esper.Processor):
                     Name("Create thingy region"),
                     Position(space=space),
                     Extent(),
-                    SelectionRegion(
+                    RectangularSelection(
                         type=SelectionType.CREATE,
                         start_x=start_pos.x,
                         start_y=start_pos.y,
@@ -519,7 +528,7 @@ class SelectionRegionController(esper.Processor):
 
         # Update pos/ext, selectables, and handle release actions
         for ent, (pos, ext, selection) in self.world.get_components(
-            Position, Extent, SelectionRegion
+            Position, Extent, RectangularSelection
         ):
             if not (camera := cameras.get(pos.space)):
                 continue
@@ -591,7 +600,7 @@ class SelectionRegionController(esper.Processor):
                 continue
 
 
-class SelectionRegionRenderer(esper.Processor):
+class RectangularSelectionRenderer(esper.Processor):
     """Draws selection regions."""
 
     def process(self):
@@ -599,7 +608,7 @@ class SelectionRegionRenderer(esper.Processor):
         theme = get_theme(self.world)
 
         for _, (pos, ext, sel) in self.world.get_components(
-            Position, Extent, SelectionRegion
+            Position, Extent, RectangularSelection
         ):
             if not (camera := cameras.get(pos.space)):
                 continue
@@ -651,10 +660,9 @@ class SelectionRegionRenderer(esper.Processor):
 
 class HoverController(esper.Processor):
     def process(self):
-        for _, (mouse, mouse_pos) in self.world.get_components(Mouse, Position):
-            break
-        else:
+        if not (mouse_comps := get_mouse_and_pos(self.world)):
             return
+        mouse, mouse_pos = mouse_comps
 
         cameras = get_cameras(self.world)
 
@@ -671,10 +679,15 @@ class HoverController(esper.Processor):
 
 class DragController(esper.Processor):
     def process(self):
-        for _, (mouse, mouse_pos) in self.world.get_components(Mouse, Position):
-            break
-        else:
+        if not (mode := get_editor_mode(self.world)):
             return
+
+        if not mode.tool == ToolType.MOVE:
+            return
+
+        if not (mouse_comps := get_mouse_and_pos(self.world)):
+            return
+        mouse, mouse_pos = mouse_comps
 
         cameras = get_cameras(self.world)
 
@@ -752,7 +765,7 @@ class ImageController(esper.Processor):
                 img.texture = pyray.load_texture_from_image(img.image)
 
             if img.texture and img.dirty:
-                pyray.update_texture(img.texture, pyray.get_image_date(img.image))
+                pyray.update_texture(img.texture, pyray.get_image_data(img.image))
                 img.dirty = False
 
 
@@ -909,9 +922,7 @@ class EditorModeController(esper.Processor):
         }
 
     def process(self):
-        for _, mode in self.world.get_component(EditorMode):
-            break
-        else:
+        if not (mode := get_editor_mode(self.world)):
             return
 
         # Update the current mode if we pressed a tool switcher
@@ -921,10 +932,24 @@ class EditorModeController(esper.Processor):
             if press.pressed:
                 mode.tool = switcher.tool
 
-        # Update the current mode if we pressed a hotkey
+        # Switch to a tool if we pressed its hotkey
         for key, tool in self.hotkeys.items():
             if pyray.is_key_pressed(key):
                 mode.tool = tool
+
+        # Tool-specific temporary overrides
+        # todo hmmmm this is weird
+        is_overriding = False
+        if (
+            mode.tool == ToolType.PENCIL or mode.underlying_tool == ToolType.PENCIL
+        ) and pyray.is_key_down(pyray.KEY_LEFT_ALT):
+            mode.tool = ToolType.DROPPER
+            mode.underlying_tool = ToolType.PENCIL
+            is_overriding = True
+
+        if mode.underlying_tool and not is_overriding:
+            mode.tool = mode.underlying_tool
+            mode.underlying_tool = None
 
         # Update the lit state of any buttons that represent the currently
         # selected tool
@@ -934,10 +959,9 @@ class EditorModeController(esper.Processor):
 
 class PressController(esper.Processor):
     def process(self):
-        for _, (mouse, mouse_pos) in self.world.get_components(Mouse, Position):
-            break
-        else:
+        if not (mouse_comps := get_mouse_and_pos(self.world)):
             return
+        mouse, mouse_pos = mouse_comps
 
         cameras = get_cameras(self.world)
 
@@ -1000,6 +1024,76 @@ class ButtonRenderer(esper.Processor):
                     )
 
             pyray.end_mode_2d()
+
+
+class PencilToolController(esper.Processor):
+    def __init__(self):
+        self.last_pos_x = None
+        self.last_pos_y = None
+        self.drawing = False
+
+    def process(self):
+        if not (mode := get_editor_mode(self.world)):
+            return
+
+        if not mode.tool == ToolType.PENCIL:
+            return
+
+        if not (mouse_comps := get_mouse_and_pos(self.world)):
+            return
+        mouse, mouse_pos = mouse_comps
+
+        cameras = get_cameras(self.world)
+
+        for ent, (canvas, pos, ext, img) in self.world.get_components(
+            Canvas, Position, Extent, Image
+        ):
+            if not (camera := cameras.get(pos.space)):
+                continue
+
+            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            pencil_pos = pyray.get_screen_to_world_2d(
+                (mouse_pos.x, mouse_pos.y), camera
+            )
+
+            if (
+                (self.drawing or not mouse.reserved)
+                and pyray.is_mouse_button_down(pyray.MOUSE_LEFT_BUTTON)
+                and point_rect_intersect(pencil_pos.x, pencil_pos.y, rect)
+            ):
+                mouse.reserved = True
+                self.drawing = True
+
+                color = mode.color_primary  # todo
+
+                if self.last_pos_x is None:
+                    self.last_pos_x = pencil_pos.x
+                if self.last_pos_y is None:
+                    self.last_pos_y = pencil_pos.y
+
+                x1 = self.last_pos_x - pos.x
+                y1 = self.last_pos_y - pos.y
+                x2 = pencil_pos.x - pos.x
+                y2 = pencil_pos.y - pos.y
+
+                draw_line(
+                    int(x1),
+                    int(y1),
+                    int(x2),
+                    int(y2),
+                    lambda x, y: pyray.image_draw_pixel(
+                        pyray.pointer(img.image), x, y, color
+                    ),
+                )
+                self.last_pos_x = pencil_pos.x
+                self.last_pos_y = pencil_pos.y
+                img.dirty = True
+
+            if pyray.is_mouse_button_released(pyray.MOUSE_LEFT_BUTTON):
+                mouse.reserved = False
+                self.drawing = False
+                self.last_pos_x = None
+                self.last_pos_y = None
 
 
 ################################################################################
@@ -1069,9 +1163,19 @@ def get_cameras(world):
     return cameras
 
 
+def get_mouse_and_pos(world):
+    for _, comps in world.get_components(Mouse, Position):
+        return comps
+
+
 def get_theme(world):
     for _, theme in world.get_component(Theme):
         return theme
+
+
+def get_editor_mode(world):
+    for _, mode in world.get_component(EditorMode):
+        return mode
 
 
 ################################################################################
@@ -1556,15 +1660,16 @@ def main():
     world.add_processor(MotionController())
     world.add_processor(DeltaPositionController())
     world.add_processor(JitterController())
+    world.add_processor(PencilToolController())
     world.add_processor(DragController())
     world.add_processor(HoverController())
     world.add_processor(PressController())
-    world.add_processor(SelectionRegionController())
+    world.add_processor(RectangularSelectionController())
     world.add_processor(ImageController())
     world.add_processor(EditorModeController())
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
-    world.add_processor(SelectionRegionRenderer())
+    world.add_processor(RectangularSelectionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
     world.add_processor(ButtonRenderer())
@@ -1572,24 +1677,20 @@ def main():
     world.add_processor(ImageDeleteController())
     world.add_processor(FinalDeleteController())
 
-    # todo phase this out
-    if not (camera_2d := get_cameras(world).get(PositionSpace.WORLD)):
-        raise RuntimeError("No active camera!")
-
     while not pyray.window_should_close():
         pyray.begin_drawing()
         pyray.clear_background(theme.color_background)
         world.process()
-        draw_tool.update()
-        grid_tool.update()
-        dropper_tool.update()
-        cell_ref_tool.update()
-        cell_ref_dropper_tool.update()
-        draw_tool.draw()
-        grid_tool.draw(camera_2d, theme)
-        dropper_tool.draw()
-        cell_ref_tool.draw(camera_2d, theme)
-        cell_ref_dropper_tool.draw(camera_2d, theme)
+        # draw_tool.update()
+        # grid_tool.update()
+        # dropper_tool.update()
+        # cell_ref_tool.update()
+        # cell_ref_dropper_tool.update()
+        # draw_tool.draw()
+        # grid_tool.draw(camera_2d, theme)
+        # dropper_tool.draw()
+        # cell_ref_tool.draw(camera_2d, theme)
+        # cell_ref_dropper_tool.draw(camera_2d, theme)
         pyray.end_drawing()
 
     pyray.close_window()
