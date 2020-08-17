@@ -1641,12 +1641,14 @@ def main():
     world.add_processor(RectangularSelectionController())
     world.add_processor(ImageController())
     world.add_processor(ToolSwitcherController())
+
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
     world.add_processor(RectangularSelectionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
     world.add_processor(ButtonRenderer())
+
     world.add_processor(SelectableDeleteController())
     world.add_processor(ImageDeleteController())
     world.add_processor(FinalDeleteController())
