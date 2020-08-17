@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Tuple
+from typing import Any, Mapping, Tuple
 
 # import raylib.static as rl
 from raylib.pyray import PyRay
@@ -34,7 +36,7 @@ class SelectionType(Enum):
     CREATE = 2
 
 
-class ToolType(Enum):
+class Tool(Enum):
     MOVE = 1
     PENCIL = 2
     DROPPER = 3
@@ -47,24 +49,58 @@ Color = Tuple[int, int, int, int]
 
 
 ################################################################################
-# Components
-
-
-# Global state attached to the world
+# Global data associated with the entire world
 # Can be read or written to by processors
+
+
 @dataclass
 class WorldContext:
+    theme: Theme
+
     # The currently active tool
-    tool: ToolType = ToolType.MOVE
+    tool: Tool = Tool.MOVE
 
     # Depending on which tool is active, the user may be able to temporarily
     # switch to another tool by holding a key combination (e.g. PENCIL + Alt =
     # DROPPER). This attribute stores which tool we will return to when the key
     # combo is released.
-    underlying_tool: ToolType = None
+    underlying_tool: Tool = None
 
     color_primary: Color = (255, 255, 255, 255)
     color_secondary: Color = (0, 0, 0, 255)
+
+    # Just active cameras; kept in sync by a processor
+    cameras: Mapping[PositionSpace, Any] = field(default_factory=dict)
+
+
+@dataclass
+class Theme:
+    color_background: Color = (9, 12, 17, 255)
+    color_position_marker: Color = (164, 84, 30, 255)
+    color_grid_cells_subtle: Color = (255, 255, 255, 32)
+    color_grid_cells_obvious: Color = (255, 255, 255, 64)
+    color_grid_minor: Color = (68, 93, 144, 16)
+    color_grid_major: Color = (68, 93, 144, 32)
+    color_text_normal: Color = (255, 255, 255, 255)
+    color_text_error: Color = (164, 84, 30, 255)
+    color_selection_create_outline: Color = (0, 255, 0, 128)
+    color_selection_create_fill: Color = (0, 255, 0, 32)
+    color_selection_normal_outline: Color = (68, 93, 144, 128)
+    color_selection_normal_fill: Color = (68, 93, 144, 32)
+    color_thingy_outline: Color = (68, 93, 144, 16)
+    color_thingy_hovered_outline: Color = (68, 93, 144, 48)
+    color_thingy_selected_outline: Color = (68, 93, 144, 128)
+    color_debug_magenta: Color = (255, 0, 255, 255)
+    color_button_fill: Color = (32, 32, 32, 255)
+    color_button_border: Color = (64, 64, 64, 255)
+    color_button_lit_fill: Color = (84, 30, 0, 255)
+    color_button_lit_border: Color = (164, 84, 30, 255)
+    color_button_hover_overlay: Color = (255, 255, 255, 32)
+    font: Any = None  # TODO
+
+
+################################################################################
+# Components
 
 
 @dataclass
@@ -192,7 +228,7 @@ class Pressable:
 
 @dataclass
 class ToolSwitcher:
-    tool: ToolType
+    tool: Tool
 
 
 @dataclass
@@ -207,32 +243,6 @@ class Image:
     texture: Any = None
     filename: str = None
     dirty: bool = False
-
-
-@dataclass
-class Theme:
-    color_background: Color = (9, 12, 17, 255)
-    color_position_marker: Color = (164, 84, 30, 255)
-    color_grid_cells_subtle: Color = (255, 255, 255, 32)
-    color_grid_cells_obvious: Color = (255, 255, 255, 64)
-    color_grid_minor: Color = (68, 93, 144, 16)
-    color_grid_major: Color = (68, 93, 144, 32)
-    color_text_normal: Color = (255, 255, 255, 255)
-    color_text_error: Color = (164, 84, 30, 255)
-    color_selection_create_outline: Color = (0, 255, 0, 128)
-    color_selection_create_fill: Color = (0, 255, 0, 32)
-    color_selection_normal_outline: Color = (68, 93, 144, 128)
-    color_selection_normal_fill: Color = (68, 93, 144, 32)
-    color_thingy_outline: Color = (68, 93, 144, 16)
-    color_thingy_hovered_outline: Color = (68, 93, 144, 48)
-    color_thingy_selected_outline: Color = (68, 93, 144, 128)
-    color_debug_magenta: Color = (255, 0, 255, 255)
-    color_button_fill: Color = (32, 32, 32, 255)
-    color_button_border: Color = (64, 64, 64, 255)
-    color_button_lit_fill: Color = (84, 30, 0, 255)
-    color_button_lit_border: Color = (164, 84, 30, 255)
-    color_button_hover_overlay: Color = (255, 255, 255, 32)
-    font: Any = None  # TODO
 
 
 @dataclass
@@ -287,14 +297,12 @@ class DebugEntityRenderer(esper.Processor):
     """Draws a basic spatial representation of the entity, for debugging."""
 
     def process(self):
-        cameras = get_cameras(self.world)
-        if not (theme := get_theme(self.world)):
-            return
+        theme = self.world.context.theme
 
         for ent, (_, pos, ext) in self.world.get_components(
             DebugEntity, Position, Extent
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             pyray.begin_mode_2d(camera)
@@ -363,7 +371,7 @@ class BackgroundGridRenderer(esper.Processor):
             y += step
 
     def process(self):
-        if not (camera := get_cameras(self.world).get(PositionSpace.WORLD)):
+        if not (camera := self.world.context.cameras.get(PositionSpace.WORLD)):
             return
 
         screen_width = pyray.get_screen_width()
@@ -381,12 +389,10 @@ class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
     def process(self):
-        cameras = get_cameras(self.world)
-        if not (theme := get_theme(self.world)):
-            return
+        theme = self.world.context.theme
 
         for _, (pos, mark) in self.world.get_components(Position, PositionMarker):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             pyray.begin_mode_2d(camera)
@@ -418,6 +424,9 @@ class CameraController(esper.Processor):
 
         for _, cam in self.world.get_component(Camera):
             if cam.active:
+                # todo right now all Camera entities are in world space yikes
+                self.world.context.cameras[PositionSpace.WORLD] = cam.camera_2d
+
                 # pan
                 if mouse_delta and pyray.is_mouse_button_down(
                     pyray.MOUSE_MIDDLE_BUTTON
@@ -472,8 +481,6 @@ class RectangularSelectionController(esper.Processor):
             return
         mouse, mouse_pos = mouse_comps
 
-        cameras = get_cameras(self.world)
-
         # Are we hovering over anything? If so, we can't create selections
         hovering_any = False
         for ent, hover in self.world.get_component(Hoverable):
@@ -494,7 +501,7 @@ class RectangularSelectionController(esper.Processor):
             # Maybe change this someday? idk
             space = PositionSpace.WORLD
             start_pos = pyray.get_screen_to_world_2d(
-                (mouse_pos.x, mouse_pos.y), cameras[space]
+                (mouse_pos.x, mouse_pos.y), self.world.context.cameras[space]
             )
             if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
                 mouse.reserved = True
@@ -532,7 +539,7 @@ class RectangularSelectionController(esper.Processor):
         for ent, (pos, ext, selection) in self.world.get_components(
             Position, Extent, RectangularSelection
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             end_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
@@ -606,13 +613,12 @@ class RectangularSelectionRenderer(esper.Processor):
     """Draws selection regions."""
 
     def process(self):
-        cameras = get_cameras(self.world)
-        theme = get_theme(self.world)
+        theme = self.world.context.theme
 
         for _, (pos, ext, sel) in self.world.get_components(
             Position, Extent, RectangularSelection
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             pyray.begin_mode_2d(camera)
@@ -666,12 +672,10 @@ class HoverController(esper.Processor):
             return
         mouse, mouse_pos = mouse_comps
 
-        cameras = get_cameras(self.world)
-
         for _, (pos, ext, hov) in self.world.get_components(
             Position, Extent, Hoverable
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             hover_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
@@ -681,19 +685,17 @@ class HoverController(esper.Processor):
 
 class DragController(esper.Processor):
     def process(self):
-        if not self.world.context.tool == ToolType.MOVE:
+        if not self.world.context.tool == Tool.MOVE:
             return
 
         if not (mouse_comps := get_mouse_and_pos(self.world)):
             return
         mouse, mouse_pos = mouse_comps
 
-        cameras = get_cameras(self.world)
-
         for _, (pos, ext, drag) in self.world.get_components(
             Position, Extent, Draggable
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             drag_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
@@ -812,14 +814,12 @@ class CanvasRenderer(esper.Processor):
     """Draws Canvases and their images."""
 
     def process(self):
-        cameras = get_cameras(self.world)
-        if not (theme := get_theme(self.world)):
-            return
+        theme = self.world.context.theme
 
         for ent, (canvas, pos, ext) in self.world.get_components(
             Canvas, Position, Extent
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             pyray.begin_mode_2d(camera)
@@ -914,9 +914,9 @@ class CanvasRenderer(esper.Processor):
 class ToolSwitcherController(esper.Processor):
     def __init__(self):
         self.hotkeys = {
-            pyray.KEY_Q: ToolType.MOVE,
-            pyray.KEY_W: ToolType.PENCIL,
-            pyray.KEY_E: ToolType.DROPPER,
+            pyray.KEY_Q: Tool.MOVE,
+            pyray.KEY_W: Tool.PENCIL,
+            pyray.KEY_E: Tool.DROPPER,
             # todo...
         }
 
@@ -939,11 +939,11 @@ class ToolSwitcherController(esper.Processor):
         # todo hmmmm this is weird
         is_overriding = False
         if (
-            context.tool == ToolType.PENCIL
-            or context.underlying_tool == ToolType.PENCIL
+            context.tool == Tool.PENCIL
+            or context.underlying_tool == Tool.PENCIL
         ) and pyray.is_key_down(pyray.KEY_LEFT_ALT):
-            context.tool = ToolType.DROPPER
-            context.underlying_tool = ToolType.PENCIL
+            context.tool = Tool.DROPPER
+            context.underlying_tool = Tool.PENCIL
             is_overriding = True
 
         if context.underlying_tool and not is_overriding:
@@ -962,12 +962,10 @@ class PressController(esper.Processor):
             return
         mouse, mouse_pos = mouse_comps
 
-        cameras = get_cameras(self.world)
-
         for ent, (pos, ext, press) in self.world.get_components(
             Position, Extent, Pressable
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             press_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
@@ -988,12 +986,10 @@ class PressController(esper.Processor):
 
 class ButtonRenderer(esper.Processor):
     def process(self):
-        cameras = get_cameras(self.world)
-        if not (theme := get_theme(self.world)):
-            return
+        theme = self.world.context.theme
 
         for ent, (pos, ext, btn) in self.world.get_components(Position, Extent, Button):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             pyray.begin_mode_2d(camera)
@@ -1032,19 +1028,17 @@ class PencilToolController(esper.Processor):
         self.drawing = False
 
     def process(self):
-        if not self.world.context.tool == ToolType.PENCIL:
+        if not self.world.context.tool == Tool.PENCIL:
             return
 
         if not (mouse_comps := get_mouse_and_pos(self.world)):
             return
         mouse, mouse_pos = mouse_comps
 
-        cameras = get_cameras(self.world)
-
         for ent, (canvas, pos, ext, img) in self.world.get_components(
             Canvas, Position, Extent, Image
         ):
-            if not (camera := cameras.get(pos.space)):
+            if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
@@ -1150,23 +1144,9 @@ def make_rect_extent_positive(rect):
 # Not sure if I like these...
 
 
-def get_cameras(world):
-    cameras = {PositionSpace.SCREEN: pyray.Camera2D((0, 0), (0, 0), 0, 3)}
-    for _, cam in world.get_component(Camera):
-        if cam.active:
-            cameras[PositionSpace.WORLD] = cam.camera_2d
-            break
-    return cameras
-
-
 def get_mouse_and_pos(world):
     for _, comps in world.get_components(Mouse, Position):
         return comps
-
-
-def get_theme(world):
-    for _, theme in world.get_component(Theme):
-        return theme
 
 
 ################################################################################
@@ -1557,8 +1537,13 @@ def main():
     pyray.init_window(800, 600, "Dream Table")
     pyray.set_target_fps(60)
 
+    theme = Theme(font=pyray.load_font("resources/fonts/alpha_beta.png"))
+
     world = esper.World()
-    world.context = WorldContext()
+    world.context = WorldContext(
+        cameras={PositionSpace.SCREEN: pyray.Camera2D((0, 0), (0, 0), 0, 3)},
+        theme=theme,
+    )
 
     # Spawn initial entities
     world.create_entity(Name("Camera"), Camera(active=True, zoom=4))
@@ -1566,7 +1551,6 @@ def main():
         Name("Mouse"), Mouse(), Position(space=PositionSpace.SCREEN), DeltaPosition()
     )
 
-    theme = Theme(font=pyray.load_font("resources/fonts/alpha_beta.png"))
     world.create_entity(Name("Editor"), theme)
 
     world.create_entity(Name("Origin"), Position(), PositionMarker())
@@ -1618,7 +1602,7 @@ def main():
     world.create_entity(
         Name("Move"),
         Button(),
-        ToolSwitcher(ToolType.MOVE),
+        ToolSwitcher(Tool.MOVE),
         Pressable(),
         Position(2, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
@@ -1628,7 +1612,7 @@ def main():
     world.create_entity(
         Name("Pencil"),
         Button(),
-        ToolSwitcher(ToolType.PENCIL),
+        ToolSwitcher(Tool.PENCIL),
         Pressable(),
         Position(10, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
@@ -1638,7 +1622,7 @@ def main():
     world.create_entity(
         Name("Dropper"),
         Button(),
-        ToolSwitcher(ToolType.DROPPER),
+        ToolSwitcher(Tool.DROPPER),
         Pressable(),
         Position(18, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
