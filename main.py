@@ -120,8 +120,6 @@ class Camera:
 
 @dataclass
 class Mouse:
-    world_pos_x: float = 0.0
-    world_pos_y: float = 0.0
     reserved: bool = False
 
 
@@ -444,24 +442,10 @@ class MouseController(esper.Processor):
     """Updates Mouse state."""
 
     def process(self):
-        cameras = get_cameras(self.world)
-
         for _, (pos, mouse) in self.world.get_components(Position, Mouse):
-            if pos.space != PositionSpace.SCREEN:
-                raise ValueError("Mouse Position.space must be PositionSpace.SCREEN")
-
-            if not (camera := cameras.get(pos.space)):
-                continue
-
             mouse_pos = pyray.get_mouse_position()
             pos.x = mouse_pos.x
             pos.y = mouse_pos.y
-
-            if camera:
-                mouse_pos_v = pyray.Vector2(pos.x, pos.y)
-                mouse_world_pos = pyray.get_screen_to_world_2d(mouse_pos_v, camera)
-                mouse.world_pos_x = mouse_world_pos.x
-                mouse.world_pos_y = mouse_world_pos.y
 
 
 class SelectionRegionController(esper.Processor):
