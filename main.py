@@ -72,6 +72,9 @@ class WorldContext:
     # Just active cameras; kept in sync by a processor
     cameras: Mapping[PositionSpace, Any] = field(default_factory=dict)
 
+    snap_x: int = 8
+    snap_y: int = 8
+
 
 @dataclass
 class Theme:
@@ -473,10 +476,6 @@ class RectangularSelectionController(esper.Processor):
     """Updates selection regions."""
 
     def process(self):
-        # todo get this from elsewhere, maybe editormode?
-        SNAP_X = 8
-        SNAP_Y = 8
-
         if not (mouse_comps := get_mouse_and_pos(self.world)):
             return
         mouse, mouse_pos = mouse_comps
@@ -549,8 +548,8 @@ class RectangularSelectionController(esper.Processor):
                 selection.start_y,
                 end_pos.x,
                 end_pos.y,
-                SNAP_X,
-                SNAP_Y,
+                self.world.context.snap_x,
+                self.world.context.snap_y,
             )
 
             pos.x = selection_rect.x
@@ -939,8 +938,7 @@ class ToolSwitcherController(esper.Processor):
         # todo hmmmm this is weird
         is_overriding = False
         if (
-            context.tool == Tool.PENCIL
-            or context.underlying_tool == Tool.PENCIL
+            context.tool == Tool.PENCIL or context.underlying_tool == Tool.PENCIL
         ) and pyray.is_key_down(pyray.KEY_LEFT_ALT):
             context.tool = Tool.DROPPER
             context.underlying_tool = Tool.PENCIL
@@ -1537,12 +1535,10 @@ def main():
     pyray.init_window(800, 600, "Dream Table")
     pyray.set_target_fps(60)
 
-    theme = Theme(font=pyray.load_font("resources/fonts/alpha_beta.png"))
-
     world = esper.World()
     world.context = WorldContext(
         cameras={PositionSpace.SCREEN: pyray.Camera2D((0, 0), (0, 0), 0, 3)},
-        theme=theme,
+        theme=Theme(font=pyray.load_font("resources/fonts/alpha_beta.png")),
     )
 
     # Spawn initial entities
@@ -1551,14 +1547,16 @@ def main():
         Name("Mouse"), Mouse(), Position(space=PositionSpace.SCREEN), DeltaPosition()
     )
 
-    world.create_entity(Name("Editor"), theme)
-
     world.create_entity(Name("Origin"), Position(), PositionMarker())
     world.create_entity(
-        Name("Minor grid"), BackgroundGrid(theme.color_grid_minor), Extent(8, 8)
+        Name("Minor grid"),
+        BackgroundGrid(world.context.theme.color_grid_minor),
+        Extent(8, 8),
     )
     world.create_entity(
-        Name("Major grid"), BackgroundGrid(theme.color_grid_major), Extent(32, 32)
+        Name("Major grid"),
+        BackgroundGrid(world.context.theme.color_grid_major),
+        Extent(32, 32),
     )
 
     # debug: a fun lil' testangle
@@ -1655,7 +1653,7 @@ def main():
 
     while not pyray.window_should_close():
         pyray.begin_drawing()
-        pyray.clear_background(theme.color_background)
+        pyray.clear_background(world.context.theme.color_background)
         world.process()
         # draw_tool.update()
         # grid_tool.update()
