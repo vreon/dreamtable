@@ -176,7 +176,7 @@ class Camera:
 
 
 @dataclass
-class RectangularSelection:
+class BoxSelection:
     type: SelectionType = SelectionType.NORMAL
     start_x: float = 0.0
     start_y: float = 0.0
@@ -465,7 +465,7 @@ class MouseController(esper.Processor):
         context.mouse_delta_y = context.mouse_pos_y - last_y
 
 
-class RectangularSelectionController(esper.Processor):
+class BoxSelectionController(esper.Processor):
     """Updates selection regions."""
 
     def process(self):
@@ -499,7 +499,7 @@ class RectangularSelectionController(esper.Processor):
                     Name("Selection region"),
                     Position(space=space),
                     Extent(),
-                    RectangularSelection(start_x=start_pos.x, start_y=start_pos.y),
+                    BoxSelection(start_x=start_pos.x, start_y=start_pos.y),
                 )
             elif pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
                 self.world.context.mouse_reserved = True
@@ -507,7 +507,7 @@ class RectangularSelectionController(esper.Processor):
                     Name("Create thingy region"),
                     Position(space=space),
                     Extent(),
-                    RectangularSelection(
+                    BoxSelection(
                         type=SelectionType.CREATE,
                         start_x=start_pos.x,
                         start_y=start_pos.y,
@@ -527,7 +527,7 @@ class RectangularSelectionController(esper.Processor):
 
         # Update pos/ext, selectables, and handle release actions
         for ent, (pos, ext, selection) in self.world.get_components(
-            Position, Extent, RectangularSelection
+            Position, Extent, BoxSelection
         ):
             if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
@@ -599,14 +599,14 @@ class RectangularSelectionController(esper.Processor):
                 continue
 
 
-class RectangularSelectionRenderer(esper.Processor):
+class BoxSelectionRenderer(esper.Processor):
     """Draws selection regions."""
 
     def process(self):
         theme = self.world.context.theme
 
         for _, (pos, ext, sel) in self.world.get_components(
-            Position, Extent, RectangularSelection
+            Position, Extent, BoxSelection
         ):
             if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
@@ -1599,13 +1599,13 @@ def main():
     world.add_processor(DragController())
     world.add_processor(HoverController())
     world.add_processor(PressController())
-    world.add_processor(RectangularSelectionController())
+    world.add_processor(BoxSelectionController())
     world.add_processor(ImageController())
     world.add_processor(ToolSwitcherController())
 
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
-    world.add_processor(RectangularSelectionRenderer())
+    world.add_processor(BoxSelectionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
     world.add_processor(ButtonRenderer())
