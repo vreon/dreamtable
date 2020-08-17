@@ -528,13 +528,19 @@ class BoxSelectionController(esper.Processor):
             camera = self.world.context.cameras[pos.space]
             end_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
 
+            snap_x, snap_y = (
+                (self.world.context.snap_x, self.world.context.snap_y)
+                if selection.type == SelectionType.CREATE
+                else (1, 1)
+            )
+
             selection_rect = aabb(
                 selection.start_x,
                 selection.start_y,
                 end_pos.x,
                 end_pos.y,
-                self.world.context.snap_x,
-                self.world.context.snap_y,
+                snap_x,
+                snap_y,
             )
 
             pos.x = selection_rect.x
