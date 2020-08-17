@@ -75,6 +75,15 @@ class WorldContext:
     snap_x: int = 8
     snap_y: int = 8
 
+    mouse_pos_x: int = None
+    mouse_pos_y: int = None
+    mouse_delta_x: int = 0
+    mouse_delta_y: int = 0
+
+    # todo this is janky af
+    # it's used to stop propagation of mouse click events
+    mouse_reserved: bool = False
+
 
 @dataclass
 class Theme:
@@ -127,14 +136,6 @@ class Velocity:
 
 
 @dataclass
-class DeltaPosition:
-    x: float = 0.0
-    y: float = 0.0
-    last_x: float = 0.0
-    last_y: float = 0.0
-
-
-@dataclass
 class Jitter:
     interval: int = 100
     tick: int = 100
@@ -172,11 +173,6 @@ class Camera:
         self.zoom_speed = 0.025
         self.zoom_velocity = 0
         self.zoom_friction = 0.85
-
-
-@dataclass
-class Mouse:
-    reserved: bool = False
 
 
 @dataclass
@@ -283,17 +279,6 @@ class JitterController(esper.Processor):
                 jit.tick = jit.interval
                 vel.x = random.randint(-jit.force, jit.force)
                 vel.y = random.randint(-jit.force, jit.force)
-
-
-class DeltaPositionController(esper.Processor):
-    """Updates DeltaPositions."""
-
-    def process(self):
-        for _, (pos, delta) in self.world.get_components(Position, DeltaPosition):
-            delta.x = delta.last_x - pos.x
-            delta.y = delta.last_y - pos.y
-            delta.last_x = pos.x
-            delta.last_y = pos.y
 
 
 class DebugEntityRenderer(esper.Processor):
@@ -421,9 +406,8 @@ class CameraController(esper.Processor):
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
 
-        mouse_delta = None
-        for _, (_, mouse_delta) in self.world.get_components(Mouse, DeltaPosition):
-            break
+        mouse_delta_x = self.world.context.mouse_delta_x
+        mouse_delta_y = self.world.context.mouse_delta_y
 
         for _, cam in self.world.get_component(Camera):
             if cam.active:
@@ -431,11 +415,9 @@ class CameraController(esper.Processor):
                 self.world.context.cameras[PositionSpace.WORLD] = cam.camera_2d
 
                 # pan
-                if mouse_delta and pyray.is_mouse_button_down(
-                    pyray.MOUSE_MIDDLE_BUTTON
-                ):
-                    cam.camera_2d.target.x += mouse_delta.x / cam.camera_2d.zoom
-                    cam.camera_2d.target.y += mouse_delta.y / cam.camera_2d.zoom
+                if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):
+                    cam.camera_2d.target.x += mouse_delta_x / cam.camera_2d.zoom
+                    cam.camera_2d.target.y += mouse_delta_y / cam.camera_2d.zoom
 
                 # smooth zoom
                 if wheel := pyray.get_mouse_wheel_move():
@@ -466,20 +448,29 @@ class MouseController(esper.Processor):
     """Updates Mouse state."""
 
     def process(self):
-        for _, (pos, mouse) in self.world.get_components(Position, Mouse):
-            mouse_pos = pyray.get_mouse_position()
-            pos.x = mouse_pos.x
-            pos.y = mouse_pos.y
+        context = self.world.context
+        mouse_pos = pyray.get_mouse_position()
+
+        last_x = context.mouse_pos_x
+        last_y = context.mouse_pos_y
+
+        if last_x is None:
+            last_x = mouse_pos.x
+        if last_y is None:
+            last_y = mouse_pos.y
+
+        context.mouse_pos_x = mouse_pos.x
+        context.mouse_pos_y = mouse_pos.y
+        context.mouse_delta_x = context.mouse_pos_x - last_x
+        context.mouse_delta_y = context.mouse_pos_y - last_y
 
 
 class RectangularSelectionController(esper.Processor):
     """Updates selection regions."""
 
     def process(self):
-        if not (mouse_comps := get_mouse_and_pos(self.world)):
-            return
-        mouse, mouse_pos = mouse_comps
-
+        mouse_pos_x = self.world.context.mouse_pos_x
+        mouse_pos_y = self.world.context.mouse_pos_y
         # Are we hovering over anything? If so, we can't create selections
         hovering_any = False
         for ent, hover in self.world.get_component(Hoverable):
@@ -495,15 +486,15 @@ class RectangularSelectionController(esper.Processor):
                 break
 
         # Create new selections
-        if not hovering_any and not mouse.reserved:
+        if not hovering_any and not self.world.context.mouse_reserved:
             # New selections always go into world space
             # Maybe change this someday? idk
             space = PositionSpace.WORLD
             start_pos = pyray.get_screen_to_world_2d(
-                (mouse_pos.x, mouse_pos.y), self.world.context.cameras[space]
+                (mouse_pos_x, mouse_pos_y), self.world.context.cameras[space]
             )
             if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
-                mouse.reserved = True
+                self.world.context.mouse_reserved = True
                 self.world.create_entity(
                     Name("Selection region"),
                     Position(space=space),
@@ -511,7 +502,7 @@ class RectangularSelectionController(esper.Processor):
                     RectangularSelection(start_x=start_pos.x, start_y=start_pos.y),
                 )
             elif pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
-                mouse.reserved = True
+                self.world.context.mouse_reserved = True
                 self.world.create_entity(
                     Name("Create thingy region"),
                     Position(space=space),
@@ -541,7 +532,7 @@ class RectangularSelectionController(esper.Processor):
             if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
-            end_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
+            end_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
 
             selection_rect = aabb(
                 selection.start_x,
@@ -578,14 +569,14 @@ class RectangularSelectionController(esper.Processor):
                 selection.type == SelectionType.NORMAL
                 and pyray.is_mouse_button_released(pyray.MOUSE_LEFT_BUTTON)
             ):
-                mouse.reserved = False
+                self.world.context.mouse_reserved = False
                 self.world.delete_entity(ent)
                 continue
             elif (
                 selection.type == SelectionType.CREATE
                 and pyray.is_mouse_button_released(pyray.MOUSE_RIGHT_BUTTON)
             ):
-                mouse.reserved = False
+                self.world.context.mouse_reserved = False
                 self.world.create_entity(
                     Name("Canvas"),
                     Position(selection_rect.x, selection_rect.y),
@@ -667,17 +658,15 @@ class RectangularSelectionRenderer(esper.Processor):
 
 class HoverController(esper.Processor):
     def process(self):
-        if not (mouse_comps := get_mouse_and_pos(self.world)):
-            return
-        mouse, mouse_pos = mouse_comps
-
+        mouse_pos_x = self.world.context.mouse_pos_x
+        mouse_pos_y = self.world.context.mouse_pos_y
         for _, (pos, ext, hov) in self.world.get_components(
             Position, Extent, Hoverable
         ):
             if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
-            hover_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
+            hover_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             hov.hovered = point_rect_intersect(hover_pos.x, hover_pos.y, rect)
 
@@ -687,9 +676,8 @@ class DragController(esper.Processor):
         if not self.world.context.tool == Tool.MOVE:
             return
 
-        if not (mouse_comps := get_mouse_and_pos(self.world)):
-            return
-        mouse, mouse_pos = mouse_comps
+        mouse_pos_x = self.world.context.mouse_pos_x
+        mouse_pos_y = self.world.context.mouse_pos_y
 
         for _, (pos, ext, drag) in self.world.get_components(
             Position, Extent, Draggable
@@ -697,14 +685,14 @@ class DragController(esper.Processor):
             if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
-            drag_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
+            drag_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             if (
-                not mouse.reserved
+                not self.world.context.mouse_reserved
                 and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
                 and point_rect_intersect(drag_pos.x, drag_pos.y, rect)
             ):
-                mouse.reserved = True
+                self.world.context.mouse_reserved = True
                 drag.dragging = True
                 drag.offset_x = drag_pos.x - pos.x
                 drag.offset_y = drag_pos.y - pos.y
@@ -716,7 +704,7 @@ class DragController(esper.Processor):
                 # todo snap to grid
 
             if pyray.is_mouse_button_released(pyray.MOUSE_LEFT_BUTTON):
-                mouse.reserved = False
+                self.world.context.mouse_reserved = False
                 drag.dragging = False
                 drag.offset_x = 0
                 drag.offset_y = 0
@@ -956,9 +944,8 @@ class ToolSwitcherController(esper.Processor):
 
 class PressController(esper.Processor):
     def process(self):
-        if not (mouse_comps := get_mouse_and_pos(self.world)):
-            return
-        mouse, mouse_pos = mouse_comps
+        mouse_pos_x = self.world.context.mouse_pos_x
+        mouse_pos_y = self.world.context.mouse_pos_y
 
         for ent, (pos, ext, press) in self.world.get_components(
             Position, Extent, Pressable
@@ -966,12 +953,12 @@ class PressController(esper.Processor):
             if not (camera := self.world.context.cameras.get(pos.space)):
                 continue
 
-            press_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
+            press_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             press.pressed = False
 
             if (
-                not mouse.reserved
+                not self.world.context.mouse_reserved
                 and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
                 and point_rect_intersect(press_pos.x, press_pos.y, rect)
             ):
@@ -1029,9 +1016,8 @@ class PencilToolController(esper.Processor):
         if not self.world.context.tool == Tool.PENCIL:
             return
 
-        if not (mouse_comps := get_mouse_and_pos(self.world)):
-            return
-        mouse, mouse_pos = mouse_comps
+        mouse_pos_x = self.world.context.mouse_pos_x
+        mouse_pos_y = self.world.context.mouse_pos_y
 
         for ent, (canvas, pos, ext, img) in self.world.get_components(
             Canvas, Position, Extent, Image
@@ -1041,15 +1027,15 @@ class PencilToolController(esper.Processor):
 
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             pencil_pos = pyray.get_screen_to_world_2d(
-                (mouse_pos.x, mouse_pos.y), camera
+                (mouse_pos_x, mouse_pos_y), camera
             )
 
             if (
-                (self.drawing or not mouse.reserved)
+                (self.drawing or not self.world.context.mouse_reserved)
                 and pyray.is_mouse_button_down(pyray.MOUSE_LEFT_BUTTON)
                 and point_rect_intersect(pencil_pos.x, pencil_pos.y, rect)
             ):
-                mouse.reserved = True
+                self.world.context.mouse_reserved = True
                 self.drawing = True
 
                 color = self.world.context.color_primary  # todo
@@ -1078,7 +1064,7 @@ class PencilToolController(esper.Processor):
                 img.dirty = True
 
             if pyray.is_mouse_button_released(pyray.MOUSE_LEFT_BUTTON):
-                mouse.reserved = False
+                self.world.context.mouse_reserved = False
                 self.drawing = False
                 self.last_pos_x = None
                 self.last_pos_y = None
@@ -1135,16 +1121,6 @@ def make_rect_extent_positive(rect):
     if rect.height < 0:
         rect.height *= -1
         rect.y -= rect.height
-
-
-################################################################################
-# "Global component" fetching helpers
-# Not sure if I like these...
-
-
-def get_mouse_and_pos(world):
-    for _, comps in world.get_components(Mouse, Position):
-        return comps
 
 
 ################################################################################
@@ -1543,10 +1519,6 @@ def main():
 
     # Spawn initial entities
     world.create_entity(Name("Camera"), Camera(active=True, zoom=4))
-    world.create_entity(
-        Name("Mouse"), Mouse(), Position(space=PositionSpace.SCREEN), DeltaPosition()
-    )
-
     world.create_entity(Name("Origin"), Position(), PositionMarker())
     world.create_entity(
         Name("Minor grid"),
@@ -1632,7 +1604,6 @@ def main():
     world.add_processor(MouseController())
     world.add_processor(CameraController())
     world.add_processor(MotionController())
-    world.add_processor(DeltaPositionController())
     world.add_processor(JitterController())
     world.add_processor(PencilToolController())
     world.add_processor(DragController())
