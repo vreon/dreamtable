@@ -416,8 +416,8 @@ class CameraController(esper.Processor):
 
                 # pan
                 if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):
-                    cam.camera_2d.target.x += mouse_delta_x / cam.camera_2d.zoom
-                    cam.camera_2d.target.y += mouse_delta_y / cam.camera_2d.zoom
+                    cam.camera_2d.target.x -= mouse_delta_x / cam.camera_2d.zoom
+                    cam.camera_2d.target.y -= mouse_delta_y / cam.camera_2d.zoom
 
                 # smooth zoom
                 if wheel := pyray.get_mouse_wheel_move():
