@@ -1113,16 +1113,6 @@ def get_outline_rect(rect):
     return pyray.Rectangle(rect.x - 1, rect.y - 1, rect.width + 2, rect.height + 2)
 
 
-def make_rect_extent_positive(rect):
-    if rect.width < 0:
-        rect.width *= -1
-        rect.x -= rect.width
-
-    if rect.height < 0:
-        rect.height *= -1
-        rect.y -= rect.height
-
-
 ################################################################################
 # Cruft that needs to be ported to ECS
 
