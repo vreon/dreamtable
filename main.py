@@ -50,6 +50,23 @@ Color = Tuple[int, int, int, int]
 # Components
 
 
+# Global state attached to the world
+# Can be read or written to by processors
+@dataclass
+class WorldContext:
+    # The currently active tool
+    tool: ToolType = ToolType.MOVE
+
+    # Depending on which tool is active, the user may be able to temporarily
+    # switch to another tool by holding a key combination (e.g. PENCIL + Alt =
+    # DROPPER). This attribute stores which tool we will return to when the key
+    # combo is released.
+    underlying_tool: ToolType = None
+
+    color_primary: Color = (255, 255, 255, 255)
+    color_secondary: Color = (0, 0, 0, 255)
+
+
 @dataclass
 class Position:
     x: float = 0.0
@@ -216,21 +233,6 @@ class Theme:
     color_button_lit_border: Color = (164, 84, 30, 255)
     color_button_hover_overlay: Color = (255, 255, 255, 32)
     font: Any = None  # TODO
-
-
-@dataclass
-class EditorMode:
-    # The currently active tool
-    tool: ToolType = ToolType.MOVE
-
-    # Depending on which tool is active, the user may be able to temporarily
-    # switch to another tool by holding a key combination (e.g. PENCIL + Alt =
-    # DROPPER). This attribute stores which tool we will return to when the key
-    # combo is released.
-    underlying_tool: ToolType = None
-
-    color_primary: Color = (255, 255, 255, 255)
-    color_secondary: Color = (0, 0, 0, 255)
 
 
 @dataclass
@@ -679,10 +681,7 @@ class HoverController(esper.Processor):
 
 class DragController(esper.Processor):
     def process(self):
-        if not (mode := get_editor_mode(self.world)):
-            return
-
-        if not mode.tool == ToolType.MOVE:
+        if not self.world.context.tool == ToolType.MOVE:
             return
 
         if not (mouse_comps := get_mouse_and_pos(self.world)):
@@ -912,7 +911,7 @@ class CanvasRenderer(esper.Processor):
             pyray.end_mode_2d()
 
 
-class EditorModeController(esper.Processor):
+class ToolSwitcherController(esper.Processor):
     def __init__(self):
         self.hotkeys = {
             pyray.KEY_Q: ToolType.MOVE,
@@ -922,39 +921,39 @@ class EditorModeController(esper.Processor):
         }
 
     def process(self):
-        if not (mode := get_editor_mode(self.world)):
-            return
+        context = self.world.context
 
-        # Update the current mode if we pressed a tool switcher
+        # Update the current tool if we pressed a tool switcher
         for ent, (switcher, press) in self.world.get_components(
             ToolSwitcher, Pressable
         ):
             if press.pressed:
-                mode.tool = switcher.tool
+                context.tool = switcher.tool
 
         # Switch to a tool if we pressed its hotkey
         for key, tool in self.hotkeys.items():
             if pyray.is_key_pressed(key):
-                mode.tool = tool
+                context.tool = tool
 
         # Tool-specific temporary overrides
         # todo hmmmm this is weird
         is_overriding = False
         if (
-            mode.tool == ToolType.PENCIL or mode.underlying_tool == ToolType.PENCIL
+            context.tool == ToolType.PENCIL
+            or context.underlying_tool == ToolType.PENCIL
         ) and pyray.is_key_down(pyray.KEY_LEFT_ALT):
-            mode.tool = ToolType.DROPPER
-            mode.underlying_tool = ToolType.PENCIL
+            context.tool = ToolType.DROPPER
+            context.underlying_tool = ToolType.PENCIL
             is_overriding = True
 
-        if mode.underlying_tool and not is_overriding:
-            mode.tool = mode.underlying_tool
-            mode.underlying_tool = None
+        if context.underlying_tool and not is_overriding:
+            context.tool = context.underlying_tool
+            context.underlying_tool = None
 
         # Update the lit state of any buttons that represent the currently
         # selected tool
         for ent, (switcher, btn) in self.world.get_components(ToolSwitcher, Button):
-            btn.lit = mode.tool == switcher.tool
+            btn.lit = context.tool == switcher.tool
 
 
 class PressController(esper.Processor):
@@ -1033,10 +1032,7 @@ class PencilToolController(esper.Processor):
         self.drawing = False
 
     def process(self):
-        if not (mode := get_editor_mode(self.world)):
-            return
-
-        if not mode.tool == ToolType.PENCIL:
+        if not self.world.context.tool == ToolType.PENCIL:
             return
 
         if not (mouse_comps := get_mouse_and_pos(self.world)):
@@ -1064,7 +1060,7 @@ class PencilToolController(esper.Processor):
                 mouse.reserved = True
                 self.drawing = True
 
-                color = mode.color_primary  # todo
+                color = self.world.context.color_primary  # todo
 
                 if self.last_pos_x is None:
                     self.last_pos_x = pencil_pos.x
@@ -1171,11 +1167,6 @@ def get_mouse_and_pos(world):
 def get_theme(world):
     for _, theme in world.get_component(Theme):
         return theme
-
-
-def get_editor_mode(world):
-    for _, mode in world.get_component(EditorMode):
-        return mode
 
 
 ################################################################################
@@ -1567,6 +1558,7 @@ def main():
     pyray.set_target_fps(60)
 
     world = esper.World()
+    world.context = WorldContext()
 
     # Spawn initial entities
     world.create_entity(Name("Camera"), Camera(active=True, zoom=4))
@@ -1575,7 +1567,7 @@ def main():
     )
 
     theme = Theme(font=pyray.load_font("resources/fonts/alpha_beta.png"))
-    world.create_entity(Name("Editor"), theme, EditorMode())
+    world.create_entity(Name("Editor"), theme)
 
     world.create_entity(Name("Origin"), Position(), PositionMarker())
     world.create_entity(
@@ -1666,7 +1658,7 @@ def main():
     world.add_processor(PressController())
     world.add_processor(RectangularSelectionController())
     world.add_processor(ImageController())
-    world.add_processor(EditorModeController())
+    world.add_processor(ToolSwitcherController())
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
     world.add_processor(RectangularSelectionRenderer())
