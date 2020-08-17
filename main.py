@@ -290,9 +290,7 @@ class DebugEntityRenderer(esper.Processor):
         for ent, (_, pos, ext) in self.world.get_components(
             DebugEntity, Position, Extent
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             pyray.begin_mode_2d(camera)
 
             rect = pyray.Rectangle(
@@ -359,9 +357,7 @@ class BackgroundGridRenderer(esper.Processor):
             y += step
 
     def process(self):
-        if not (camera := self.world.context.cameras.get(PositionSpace.WORLD)):
-            return
-
+        camera = self.world.context.cameras[PositionSpace.WORLD]
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
         for _, (grid, ext) in self.world.get_components(BackgroundGrid, Extent):
@@ -380,9 +376,7 @@ class PositionMarkerRenderer(esper.Processor):
         theme = self.world.context.theme
 
         for _, (pos, mark) in self.world.get_components(Position, PositionMarker):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             pyray.begin_mode_2d(camera)
 
             pyray.draw_line_v(
@@ -529,9 +523,7 @@ class BoxSelectionController(esper.Processor):
         for ent, (pos, ext, selection) in self.world.get_components(
             Position, Extent, BoxSelection
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             end_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
 
             selection_rect = aabb(
@@ -608,8 +600,7 @@ class BoxSelectionRenderer(esper.Processor):
         for _, (pos, ext, sel) in self.world.get_components(
             Position, Extent, BoxSelection
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
+            camera = self.world.context.cameras[pos.space]
 
             pyray.begin_mode_2d(camera)
 
@@ -663,9 +654,7 @@ class HoverController(esper.Processor):
         for _, (pos, ext, hov) in self.world.get_components(
             Position, Extent, Hoverable
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             hover_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             hov.hovered = point_rect_intersect(hover_pos.x, hover_pos.y, rect)
@@ -682,9 +671,7 @@ class DragController(esper.Processor):
         for _, (pos, ext, drag) in self.world.get_components(
             Position, Extent, Draggable
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             drag_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             if (
@@ -806,8 +793,7 @@ class CanvasRenderer(esper.Processor):
         for ent, (canvas, pos, ext) in self.world.get_components(
             Canvas, Position, Extent
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
+            camera = self.world.context.cameras[pos.space]
 
             pyray.begin_mode_2d(camera)
 
@@ -950,9 +936,7 @@ class PressController(esper.Processor):
         for ent, (pos, ext, press) in self.world.get_components(
             Position, Extent, Pressable
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             press_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             press.pressed = False
@@ -974,8 +958,7 @@ class ButtonRenderer(esper.Processor):
         theme = self.world.context.theme
 
         for ent, (pos, ext, btn) in self.world.get_components(Position, Extent, Button):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
+            camera = self.world.context.cameras[pos.space]
 
             pyray.begin_mode_2d(camera)
 
@@ -1022,9 +1005,7 @@ class PencilToolController(esper.Processor):
         for ent, (canvas, pos, ext, img) in self.world.get_components(
             Canvas, Position, Extent, Image
         ):
-            if not (camera := self.world.context.cameras.get(pos.space)):
-                continue
-
+            camera = self.world.context.cameras[pos.space]
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             pencil_pos = pyray.get_screen_to_world_2d(
                 (mouse_pos_x, mouse_pos_y), camera
