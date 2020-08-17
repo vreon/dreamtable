@@ -916,6 +916,14 @@ class CanvasRenderer(esper.Processor):
 
 
 class EditorModeController(esper.Processor):
+    def __init__(self):
+        self.hotkeys = {
+            pyray.KEY_Q: ToolType.MOVE,
+            pyray.KEY_W: ToolType.PENCIL,
+            pyray.KEY_E: ToolType.DROPPER,
+            # todo...
+        }
+
     def process(self):
         for _, mode in self.world.get_component(EditorMode):
             break
@@ -928,6 +936,11 @@ class EditorModeController(esper.Processor):
         ):
             if press.pressed:
                 mode.tool = switcher.tool
+
+        # Update the current mode if we pressed a hotkey
+        for key, tool in self.hotkeys.items():
+            if pyray.is_key_pressed(key):
+                mode.tool = tool
 
         # Update the lit state of any buttons that represent the currently
         # selected tool
