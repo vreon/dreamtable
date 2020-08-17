@@ -277,15 +277,17 @@ class DebugEntityRenderer(esper.Processor):
     """Draws a basic spatial representation of the entity, for debugging."""
 
     def process(self):
-        camera_2d = get_active_camera_2d(self.world)
+        cameras = get_cameras(self.world)
         if not (theme := get_theme(self.world)):
             return
 
         for ent, (_, pos, ext) in self.world.get_components(
             DebugEntity, Position, Extent
         ):
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(camera_2d)
+            if not (camera := cameras.get(pos.space)):
+                continue
+
+            pyray.begin_mode_2d(camera)
 
             rect = pyray.Rectangle(
                 int(pos.x), int(pos.y), int(ext.width), int(ext.height)
@@ -320,18 +322,17 @@ class DebugEntityRenderer(esper.Processor):
                     theme.font, name.name, (int(x), int(y)), font_size, spacing, color,
                 )
 
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.end_mode_2d()
+            pyray.end_mode_2d()
 
 
 class BackgroundGridRenderer(esper.Processor):
     """Draws BackgroundGrids."""
 
-    def _draw_x(self, grid, camera_2d, step, width, height):
+    def _draw_x(self, grid, camera, step, width, height):
         if step < grid.min_step:
             return
 
-        x = -camera_2d.target.x * camera_2d.zoom + width / 2
+        x = -camera.target.x * camera.zoom + width / 2
         x %= step
         while x < width:
             pyray.draw_line_ex(
@@ -339,11 +340,11 @@ class BackgroundGridRenderer(esper.Processor):
             )
             x += step
 
-    def _draw_y(self, grid, camera_2d, step, width, height):
+    def _draw_y(self, grid, camera, step, width, height):
         if step < grid.min_step:
             return
 
-        y = -camera_2d.target.y * camera_2d.zoom + height / 2
+        y = -camera.target.y * camera.zoom + height / 2
         y %= step
         while y < height:
             pyray.draw_line_ex(
@@ -352,25 +353,17 @@ class BackgroundGridRenderer(esper.Processor):
             y += step
 
     def process(self):
-        if not (camera_2d := get_active_camera_2d(self.world)):
+        if not (camera := get_cameras(self.world).get(PositionSpace.WORLD)):
             return
 
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
         for _, (grid, ext) in self.world.get_components(BackgroundGrid, Extent):
             self._draw_x(
-                grid,
-                camera_2d,
-                ext.width * camera_2d.zoom,
-                screen_width,
-                screen_height,
+                grid, camera, ext.width * camera.zoom, screen_width, screen_height,
             )
             self._draw_y(
-                grid,
-                camera_2d,
-                ext.height * camera_2d.zoom,
-                screen_width,
-                screen_height,
+                grid, camera, ext.height * camera.zoom, screen_width, screen_height,
             )
 
 
@@ -378,13 +371,15 @@ class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
     def process(self):
-        camera_2d = get_active_camera_2d(self.world)
+        cameras = get_cameras(self.world)
         if not (theme := get_theme(self.world)):
             return
 
         for _, (pos, mark) in self.world.get_components(Position, PositionMarker):
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(camera_2d)
+            if not (camera := cameras.get(pos.space)):
+                continue
+
+            pyray.begin_mode_2d(camera)
 
             pyray.draw_line_v(
                 (int(pos.x - mark.size), int(pos.y)),
@@ -397,8 +392,7 @@ class PositionMarkerRenderer(esper.Processor):
                 theme.color_position_marker,
             )
 
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.end_mode_2d()
+            pyray.end_mode_2d()
 
 
 class CameraController(esper.Processor):
@@ -450,20 +444,22 @@ class MouseController(esper.Processor):
     """Updates Mouse state."""
 
     def process(self):
-        camera_2d = get_active_camera_2d(self.world)
+        cameras = get_cameras(self.world)
 
         for _, (pos, mouse) in self.world.get_components(Position, Mouse):
-            # I don't know how a Mouse Position could be in world space but hey
             if pos.space != PositionSpace.SCREEN:
+                raise ValueError("Mouse Position.space must be PositionSpace.SCREEN")
+
+            if not (camera := cameras.get(pos.space)):
                 continue
 
             mouse_pos = pyray.get_mouse_position()
             pos.x = mouse_pos.x
             pos.y = mouse_pos.y
 
-            if camera_2d:
+            if camera:
                 mouse_pos_v = pyray.Vector2(pos.x, pos.y)
-                mouse_world_pos = pyray.get_screen_to_world_2d(mouse_pos_v, camera_2d)
+                mouse_world_pos = pyray.get_screen_to_world_2d(mouse_pos_v, camera)
                 mouse.world_pos_x = mouse_world_pos.x
                 mouse.world_pos_y = mouse_world_pos.y
 
@@ -481,6 +477,8 @@ class SelectionRegionController(esper.Processor):
         else:
             return
 
+        cameras = get_cameras(self.world)
+
         # Are we hovering over anything? If so, we can't create selections
         hovering_any = False
         for ent, hover in self.world.get_component(Hoverable):
@@ -497,24 +495,19 @@ class SelectionRegionController(esper.Processor):
 
         # Create new selections
         if not hovering_any and not mouse.reserved:
-            if True:  # debug
-                # new selections go into world space
-                mouse_pos_x = mouse.world_pos_x
-                mouse_pos_y = mouse.world_pos_y
-                space = PositionSpace.WORLD
-            else:
-                # new selections go into screen space
-                mouse_pos_x = mouse_pos.x
-                mouse_pos_y = mouse_pos.y
-                space = PositionSpace.SCREEN
-
+            # New selections always go into world space
+            # Maybe change this someday? idk
+            space = PositionSpace.WORLD
+            start_pos = pyray.get_screen_to_world_2d(
+                (mouse_pos.x, mouse_pos.y), cameras[space]
+            )
             if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
                 mouse.reserved = True
                 self.world.create_entity(
                     Name("Selection region"),
                     Position(space=space),
                     Extent(),
-                    SelectionRegion(start_x=mouse_pos_x, start_y=mouse_pos_y),
+                    SelectionRegion(start_x=start_pos.x, start_y=start_pos.y),
                 )
             elif pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
                 mouse.reserved = True
@@ -524,43 +517,36 @@ class SelectionRegionController(esper.Processor):
                     Extent(),
                     SelectionRegion(
                         type=SelectionType.CREATE,
-                        start_x=mouse_pos_x,
-                        start_y=mouse_pos_y,
+                        start_x=start_pos.x,
+                        start_y=start_pos.y,
                     ),
                 )
 
         # Identify selectables
-        selectables_world = []
-        selectables_screen = []
+        selectables_by_space = {
+            PositionSpace.WORLD: [],
+            PositionSpace.SCREEN: [],
+        }
         for ent, (pos, ext, selectable) in self.world.get_components(
             Position, Extent, Selectable
         ):
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
-            if pos.space == PositionSpace.WORLD:
-                selectables_world.append((selectable, rect))
-            elif pos.space == PositionSpace.SCREEN:
-                selectables_screen.append((selectable, rect))
+            selectables_by_space[pos.space].append((selectable, rect))
 
         # Update pos/ext, selectables, and handle release actions
         for ent, (pos, ext, selection) in self.world.get_components(
             Position, Extent, SelectionRegion
         ):
-            if pos.space == PositionSpace.WORLD:
-                mouse_pos_x = mouse.world_pos_x
-                mouse_pos_y = mouse.world_pos_y
-                selectables = selectables_world
-            elif pos.space == PositionSpace.SCREEN:
-                mouse_pos_x = mouse_pos.x
-                mouse_pos_y = mouse_pos.y
-                selectables = selectables_screen
-            else:
+            if not (camera := cameras.get(pos.space)):
                 continue
+
+            end_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
 
             selection_rect = aabb(
                 selection.start_x,
                 selection.start_y,
-                mouse_pos_x,
-                mouse_pos_y,
+                end_pos.x,
+                end_pos.y,
                 SNAP_X,
                 SNAP_Y,
             )
@@ -581,7 +567,7 @@ class SelectionRegionController(esper.Processor):
 
             # Update selectable entities
             if selection.type == SelectionType.NORMAL:
-                for selectable, selectable_rect in selectables:
+                for selectable, selectable_rect in selectables_by_space[pos.space]:
                     selectable.selected = rect_rect_intersect(
                         selectable_rect, selection_rect
                     )
@@ -625,14 +611,16 @@ class SelectionRegionRenderer(esper.Processor):
     """Draws selection regions."""
 
     def process(self):
-        camera_2d = get_active_camera_2d(self.world)
+        cameras = get_cameras(self.world)
         theme = get_theme(self.world)
 
         for _, (pos, ext, sel) in self.world.get_components(
             Position, Extent, SelectionRegion
         ):
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(camera_2d)
+            if not (camera := cameras.get(pos.space)):
+                continue
+
+            pyray.begin_mode_2d(camera)
 
             if sel.type == SelectionType.NORMAL:
                 fill_color = theme.color_selection_normal_fill
@@ -674,8 +662,7 @@ class SelectionRegionRenderer(esper.Processor):
                     theme.color_text_normal,
                 )
 
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.end_mode_2d()
+            pyray.end_mode_2d()
 
 
 class HoverController(esper.Processor):
@@ -685,20 +672,17 @@ class HoverController(esper.Processor):
         else:
             return
 
+        cameras = get_cameras(self.world)
+
         for _, (pos, ext, hov) in self.world.get_components(
             Position, Extent, Hoverable
         ):
-            if pos.space == PositionSpace.WORLD:
-                mouse_pos_x = mouse.world_pos_x
-                mouse_pos_y = mouse.world_pos_y
-            elif pos.space == PositionSpace.SCREEN:
-                mouse_pos_x = mouse_pos.x
-                mouse_pos_y = mouse_pos.y
-            else:
+            if not (camera := cameras.get(pos.space)):
                 continue
 
+            hover_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
-            hov.hovered = point_rect_intersect(mouse_pos_x, mouse_pos_y, rect)
+            hov.hovered = point_rect_intersect(hover_pos.x, hover_pos.y, rect)
 
 
 class DragController(esper.Processor):
@@ -708,32 +692,29 @@ class DragController(esper.Processor):
         else:
             return
 
+        cameras = get_cameras(self.world)
+
         for _, (pos, ext, drag) in self.world.get_components(
             Position, Extent, Draggable
         ):
-            if pos.space == PositionSpace.WORLD:
-                mouse_pos_x = mouse.world_pos_x
-                mouse_pos_y = mouse.world_pos_y
-            elif pos.space == PositionSpace.SCREEN:
-                mouse_pos_x = mouse_pos.x
-                mouse_pos_y = mouse_pos.y
-            else:
+            if not (camera := cameras.get(pos.space)):
                 continue
 
+            drag_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
             if (
                 not mouse.reserved
                 and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
-                and point_rect_intersect(mouse_pos_x, mouse_pos_y, rect)
+                and point_rect_intersect(drag_pos.x, drag_pos.y, rect)
             ):
                 mouse.reserved = True
                 drag.dragging = True
-                drag.offset_x = mouse_pos_x - pos.x
-                drag.offset_y = mouse_pos_y - pos.y
+                drag.offset_x = drag_pos.x - pos.x
+                drag.offset_y = drag_pos.y - pos.y
 
             if drag.dragging:
-                pos.x = mouse_pos_x - drag.offset_x
-                pos.y = mouse_pos_y - drag.offset_y
+                pos.x = drag_pos.x - drag.offset_x
+                pos.y = drag_pos.y - drag.offset_y
 
                 # todo snap to grid
 
@@ -835,15 +816,17 @@ class CanvasRenderer(esper.Processor):
     """Draws Canvases and their images."""
 
     def process(self):
-        camera_2d = get_active_camera_2d(self.world)
+        cameras = get_cameras(self.world)
         if not (theme := get_theme(self.world)):
             return
 
         for ent, (canvas, pos, ext) in self.world.get_components(
             Canvas, Position, Extent
         ):
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(camera_2d)
+            if not (camera := cameras.get(pos.space)):
+                continue
+
+            pyray.begin_mode_2d(camera)
 
             # draw texture if it has an image
             # it always should, but who knows.
@@ -929,8 +912,7 @@ class CanvasRenderer(esper.Processor):
                             cell_grid_color,
                         )
 
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.end_mode_2d()
+            pyray.end_mode_2d()
 
 
 class EditorModeController(esper.Processor):
@@ -960,26 +942,22 @@ class PressController(esper.Processor):
         else:
             return
 
+        cameras = get_cameras(self.world)
+
         for ent, (pos, ext, press) in self.world.get_components(
             Position, Extent, Pressable
         ):
-            if pos.space == PositionSpace.WORLD:
-                mouse_pos_x = mouse.world_pos_x
-                mouse_pos_y = mouse.world_pos_y
-            elif pos.space == PositionSpace.SCREEN:
-                mouse_pos_x = mouse_pos.x
-                mouse_pos_y = mouse_pos.y
-            else:
+            if not (camera := cameras.get(pos.space)):
                 continue
 
+            press_pos = pyray.get_screen_to_world_2d((mouse_pos.x, mouse_pos.y), camera)
             rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
-
             press.pressed = False
 
             if (
                 not mouse.reserved
                 and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
-                and point_rect_intersect(mouse_pos_x, mouse_pos_y, rect)
+                and point_rect_intersect(press_pos.x, press_pos.y, rect)
             ):
                 press.pressed = True
                 press.down = True
@@ -990,13 +968,15 @@ class PressController(esper.Processor):
 
 class ButtonRenderer(esper.Processor):
     def process(self):
-        camera_2d = get_active_camera_2d(self.world)
+        cameras = get_cameras(self.world)
         if not (theme := get_theme(self.world)):
             return
 
         for ent, (pos, ext, btn) in self.world.get_components(Position, Extent, Button):
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.begin_mode_2d(camera_2d)
+            if not (camera := cameras.get(pos.space)):
+                continue
+
+            pyray.begin_mode_2d(camera)
 
             rect = pyray.Rectangle(
                 int(pos.x), int(pos.y), int(ext.width), int(ext.height),
@@ -1022,8 +1002,7 @@ class ButtonRenderer(esper.Processor):
                         img.texture, int(pos.x), int(pos.y), (255, 255, 255, 255)
                     )
 
-            if camera_2d and pos.space == PositionSpace.WORLD:
-                pyray.end_mode_2d()
+            pyray.end_mode_2d()
 
 
 ################################################################################
@@ -1084,10 +1063,13 @@ def make_rect_extent_positive(rect):
 # Not sure if I like these...
 
 
-def get_active_camera_2d(world):
+def get_cameras(world):
+    cameras = {PositionSpace.SCREEN: pyray.Camera2D((0, 0), (0, 0), 0, 3)}
     for _, cam in world.get_component(Camera):
         if cam.active:
-            return cam.camera_2d
+            cameras[PositionSpace.WORLD] = cam.camera_2d
+            break
+    return cameras
 
 
 def get_theme(world):
@@ -1545,7 +1527,7 @@ def main():
         Button(),
         ToolSwitcher(ToolType.MOVE),
         Pressable(),
-        Position(12, -50),
+        Position(2, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
         Image(filename="resources/icons/hand.png"),
         Hoverable(),
@@ -1555,7 +1537,7 @@ def main():
         Button(),
         ToolSwitcher(ToolType.PENCIL),
         Pressable(),
-        Position(20, -50),
+        Position(10, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
         Image(filename="resources/icons/pencil.png"),
         Hoverable(),
@@ -1565,7 +1547,7 @@ def main():
         Button(),
         ToolSwitcher(ToolType.DROPPER),
         Pressable(),
-        Position(28, -50),
+        Position(18, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
         Image(filename="resources/icons/dropper.png"),
         Hoverable(),
@@ -1594,7 +1576,7 @@ def main():
     world.add_processor(FinalDeleteController())
 
     # todo phase this out
-    if not (camera_2d := get_active_camera_2d(world)):
+    if not (camera_2d := get_cameras(world).get(PositionSpace.WORLD)):
         raise RuntimeError("No active camera!")
 
     while not pyray.window_should_close():
