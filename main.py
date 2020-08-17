@@ -635,14 +635,12 @@ class BoxSelectionRenderer(esper.Processor):
             width = abs(x_max - x)
             height = abs(y_max - y)
 
-            fill_rect = pyray.Rectangle(int(x), int(y), int(width), int(height))
-            pyray.draw_rectangle_rec(fill_rect, fill_color)
-
-            outline_rect = get_outline_rect(fill_rect)
-            pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
+            rect = pyray.Rectangle(int(x), int(y), int(width), int(height))
+            pyray.draw_rectangle_rec(rect, fill_color)
+            pyray.draw_rectangle_lines_ex(rect, 1, outline_color)
 
             if labeled:
-                text_pos = pyray.Vector2(int(x) - 1, int(y) - 9)
+                text_pos = pyray.Vector2(int(x), int(y) - 8)
                 pyray.draw_text_ex(
                     theme.font,
                     f"{int(width)}x{int(height)}",
@@ -1549,9 +1547,10 @@ def main():
 
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
-    world.add_processor(BoxSelectionRenderer())
     world.add_processor(CanvasRenderer())
     world.add_processor(DebugEntityRenderer())
+    world.add_processor(BoxSelectionRenderer())
+
     world.add_processor(ButtonRenderer())
     world.add_processor(DropperToolRenderer())
     world.add_processor(PencilToolRenderer())
