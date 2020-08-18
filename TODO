@@ -25,6 +25,7 @@ dream table (working title)
   > right click drag on canvas thingies to resize
   - scaling (s + wheel)
   - import via drag and drop
+  - MANIFEST.in
 
 - controls
   x on grid
