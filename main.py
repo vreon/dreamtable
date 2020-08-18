@@ -863,11 +863,17 @@ class CanvasRenderer(esper.Processor):
 
             # Draw the CellGrid, if this Canvas has one
             for cells in self.world.try_component(ent, CellGrid):
-                if not grid_tool.active and not canvas.cell_grid_always_visible:
+                if (
+                    self.world.context.tool != Tool.GRID
+                    and not canvas.cell_grid_always_visible
+                ):
                     continue
 
                 cell_grid_color = theme.color_grid_cells_subtle
-                if grid_tool.active and canvas.cell_grid_always_visible:
+                if (
+                    self.world.context.tool == Tool.GRID
+                    and canvas.cell_grid_always_visible
+                ):
                     cell_grid_color = theme.color_grid_cells_obvious
 
                 if cells.x > 1:
