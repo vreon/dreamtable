@@ -80,6 +80,7 @@ class WorldContext:
     mouse_pos_y: int = None
     mouse_delta_x: int = 0
     mouse_delta_y: int = 0
+    mouse_wheel: int = 0
 
     # todo this is janky af
     # it's used to stop propagation of mouse click events
@@ -395,6 +396,16 @@ class PositionMarkerRenderer(esper.Processor):
             pyray.end_mode_2d()
 
 
+class CameraContextController(esper.Processor):
+    """Update the context with active cameras."""
+
+    def process(self):
+        for _, cam in self.world.get_component(Camera):
+            if cam.active:
+                # todo right now all Camera entities are in world space yikes
+                self.world.context.cameras[PositionSpace.WORLD] = cam.camera_2d
+
+
 class CameraController(esper.Processor):
     """Update cameras in response to events."""
 
@@ -402,22 +413,21 @@ class CameraController(esper.Processor):
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
 
-        mouse_delta_x = self.world.context.mouse_delta_x
-        mouse_delta_y = self.world.context.mouse_delta_y
+        context = self.world.context
+        mouse_delta_x = context.mouse_delta_x
+        mouse_delta_y = context.mouse_delta_y
 
         for _, cam in self.world.get_component(Camera):
             if cam.active:
-                # todo right now all Camera entities are in world space yikes
-                self.world.context.cameras[PositionSpace.WORLD] = cam.camera_2d
-
                 # pan
                 if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):
                     cam.camera_2d.target.x -= mouse_delta_x / cam.camera_2d.zoom
                     cam.camera_2d.target.y -= mouse_delta_y / cam.camera_2d.zoom
 
                 # smooth zoom
-                if wheel := pyray.get_mouse_wheel_move():
-                    cam.zoom_velocity += cam.zoom_speed * wheel
+                if context.mouse_wheel:
+                    cam.zoom_velocity += cam.zoom_speed * context.mouse_wheel
+                    context.mouse_wheel = 0
 
                 # global hotkeys
                 if pyray.is_key_pressed(pyray.KEY_HOME):
@@ -445,6 +455,7 @@ class MouseController(esper.Processor):
 
     def process(self):
         context = self.world.context
+        context.mouse_wheel = pyray.get_mouse_wheel_move()
         mouse_pos = pyray.get_mouse_position()
 
         last_x = context.mouse_pos_x
@@ -1149,6 +1160,77 @@ class DropperToolRenderer(esper.Processor):
         pyray.draw_rectangle_lines_ex(get_outline_rect(rect), 1, (255, 255, 255, 255))
 
 
+class GridToolController(esper.Processor):
+    def process(self):
+        if not self.world.context.tool == Tool.GRID:
+            return
+
+        context = self.world.context
+        mouse_pos_x = context.mouse_pos_x
+        mouse_pos_y = context.mouse_pos_y
+
+        for ent, (canvas, pos, ext, cellgrid) in self.world.get_components(
+            Canvas, Position, Extent, CellGrid
+        ):
+            camera = self.world.context.cameras[pos.space]
+            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            mouse_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
+
+            if not point_rect_intersect(mouse_pos.x, mouse_pos.y, rect):
+                continue
+
+            cellgrid.x += context.mouse_wheel
+            cellgrid.y += context.mouse_wheel
+            cellgrid.x = max(cellgrid.x, 1)
+            cellgrid.y = max(cellgrid.y, 1)
+
+            # todo update cellrefs I guess
+
+            context.mouse_wheel = 0
+            break
+
+
+class GridToolRenderer(esper.Processor):
+    def process(self):
+        context = self.world.context
+
+        if not context.tool == Tool.GRID:
+            return
+
+        theme = context.theme
+
+        for ent, (canvas, pos, ext, cellgrid) in self.world.get_components(
+            Canvas, Position, Extent, CellGrid
+        ):
+            camera = context.cameras[pos.space]
+
+            pyray.begin_mode_2d(camera)
+
+            cell_w = ext.width / cellgrid.x
+            cell_h = ext.height / cellgrid.y
+
+            if cell_w.is_integer() and cell_h.is_integer():
+                text_color = theme.color_text_normal
+                cell_dimensions = f"{int(cell_w)}x{int(cell_h)}"
+            else:
+                text_color = theme.color_text_error
+                cell_dimensions = f"{cell_w:.2f}x{cell_h:.2f}"
+
+            text_offset_x = 0
+            text_offset_y = -8
+
+            pyray.draw_text_ex(
+                theme.font,
+                str(f"{cellgrid.x}x{cellgrid.y} @ {cell_dimensions}"),
+                (pos.x + text_offset_x, pos.y + text_offset_y),
+                8,
+                1,
+                text_color,
+            )
+
+            pyray.end_mode_2d()
+
+
 ################################################################################
 # Helpers
 
@@ -1356,91 +1438,9 @@ class CellRefTool:
         )
 
 
-class GridTool:
-    def __init__(self):
-        self.active = False
-        self.thingy = None
-
-    def update(self):
-        self.active = pyray.is_key_down(pyray.KEY_G)
-
-    def update_thingy(self, thingy, camera_2d):
-        self.thingy = thingy
-
-        if not thingy:
-            return
-
-        if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
-            thingy.cells_visible = not thingy.cells_visible
-
-        cells_x_delta = 0
-        cells_y_delta = 0
-
-        cells_x_delta = cells_y_delta = int(pyray.get_mouse_wheel_move())
-
-        if pyray.is_mouse_button_down(pyray.MOUSE_RIGHT_BUTTON):
-            cells_y_delta = 0
-
-        thingy.cells_x += cells_x_delta
-        thingy.cells_y += cells_y_delta
-
-        thingy.cells_x = max(thingy.cells_x, 1)
-        thingy.cells_y = max(thingy.cells_y, 1)
-
-        if cells_x_delta != 0 or cells_y_delta != 0:
-            # todo blehhhhhhghghgh
-            thingy.cell_refs = [
-                [None for x in range(thingy.cells_x)] for y in range(thingy.cells_y)
-            ]
-
-    def draw(self, camera_2d, theme):
-        if not self.active:
-            return
-
-        mouse_pos = pyray.get_mouse_position()
-
-        # debug: temp grid icon
-        pyray.draw_text_ex(
-            theme.font,
-            b"#",
-            pyray.Vector2(mouse_pos.x + 16, mouse_pos.y - 16),
-            24,
-            1,
-            theme.color_text_normal,
-        )
-
-        if not self.thingy:
-            return
-
-        cell_w = self.thingy.w / self.thingy.cells_x
-        cell_h = self.thingy.h / self.thingy.cells_y
-
-        if cell_w.is_integer() and cell_h.is_integer():
-            text_color = theme.color_text_normal
-            cell_dimensions = f"{int(cell_w)}x{int(cell_h)}"
-        else:
-            text_color = theme.color_text_error
-            cell_dimensions = f"{cell_w:.2f}x{cell_h:.2f}"
-
-        text_offset_x = -1 if self.thingy.selected else 0
-        text_offset_y = -9 if self.thingy.selected else -8
-
-        pyray.begin_mode_2d(camera_2d)
-        pyray.draw_text_ex(
-            theme.font,
-            str(f"{self.thingy.cells_x}x{self.thingy.cells_y} @ {cell_dimensions}"),
-            pyray.Vector2(self.thingy.x + text_offset_x, self.thingy.y + text_offset_y),
-            8,
-            1,
-            text_color,
-        )
-        pyray.end_mode_2d()
-
-
 ################################################################################
 
 
-grid_tool = GridTool()
 cell_ref_tool = CellRefTool()
 cell_ref_dropper_tool = CellRefDropperTool()
 
@@ -1570,18 +1570,21 @@ def main():
     )
 
     # Register controllers and renderers (flavors of processors)
+    world.add_processor(CameraContextController())
     world.add_processor(MouseController())
-    world.add_processor(CameraController())
-    world.add_processor(MotionController())
-    world.add_processor(JitterController())
     world.add_processor(PencilToolController())
     world.add_processor(DropperToolController())
+    world.add_processor(GridToolController())
     world.add_processor(DragController())
     world.add_processor(HoverController())
     world.add_processor(PressController())
     world.add_processor(BoxSelectionController())
     world.add_processor(ImageController())
     world.add_processor(ToolSwitcherController())
+
+    world.add_processor(CameraController())
+    world.add_processor(MotionController())
+    world.add_processor(JitterController())
 
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
@@ -1592,6 +1595,7 @@ def main():
     world.add_processor(ButtonRenderer())
     world.add_processor(DropperToolRenderer())
     world.add_processor(PencilToolRenderer())
+    world.add_processor(GridToolRenderer())
 
     world.add_processor(SelectableDeleteController())
     world.add_processor(ImageDeleteController())
@@ -1601,10 +1605,8 @@ def main():
         pyray.begin_drawing()
         pyray.clear_background(world.context.theme.color_background)
         world.process()
-        # grid_tool.update()
         # cell_ref_tool.update()
         # cell_ref_dropper_tool.update()
-        # grid_tool.draw(camera_2d, theme)
         # cell_ref_tool.draw(camera_2d, theme)
         # cell_ref_dropper_tool.draw(camera_2d, theme)
         pyray.end_drawing()
