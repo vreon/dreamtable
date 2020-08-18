@@ -41,8 +41,8 @@ class Tool(Enum):
     PENCIL = 2
     DROPPER = 3
     GRID = 4
-    CELL_REF = 5
-    CELL_REF_DROPPER = 6
+    CELLREF = 5
+    CELLREF_DROPPER = 6
 
 
 Color = Tuple[int, int, int, int]
@@ -901,7 +901,9 @@ class ToolSwitcherController(esper.Processor):
             pyray.KEY_Q: Tool.MOVE,
             pyray.KEY_W: Tool.PENCIL,
             pyray.KEY_E: Tool.DROPPER,
-            # todo...
+            pyray.KEY_R: Tool.GRID,
+            pyray.KEY_T: Tool.CELLREF,
+            pyray.KEY_Y: Tool.CELLREF_DROPPER,
         }
 
     def process(self):
@@ -1505,7 +1507,7 @@ def main():
         Button(),
         ToolSwitcher(Tool.MOVE),
         Pressable(),
-        Position(2, 2, space=PositionSpace.SCREEN),
+        Position(2 + 8 * 0, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
         Image(filename="resources/icons/hand.png"),
         Hoverable(),
@@ -1515,7 +1517,7 @@ def main():
         Button(),
         ToolSwitcher(Tool.PENCIL),
         Pressable(),
-        Position(10, 2, space=PositionSpace.SCREEN),
+        Position(2 + 8 * 1, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
         Image(filename="resources/icons/pencil.png"),
         Hoverable(),
@@ -1525,9 +1527,39 @@ def main():
         Button(),
         ToolSwitcher(Tool.DROPPER),
         Pressable(),
-        Position(18, 2, space=PositionSpace.SCREEN),
+        Position(2 + 8 * 2, 2, space=PositionSpace.SCREEN),
         Extent(8, 8),
         Image(filename="resources/icons/dropper.png"),
+        Hoverable(),
+    )
+    world.create_entity(
+        Name("Grid"),
+        Button(),
+        ToolSwitcher(Tool.GRID),
+        Pressable(),
+        Position(2 + 8 * 3, 2, space=PositionSpace.SCREEN),
+        Extent(8, 8),
+        Image(filename="resources/icons/grid.png"),
+        Hoverable(),
+    )
+    world.create_entity(
+        Name("Cellref"),
+        Button(),
+        ToolSwitcher(Tool.CELLREF),
+        Pressable(),
+        Position(2 + 8 * 4, 2, space=PositionSpace.SCREEN),
+        Extent(8, 8),
+        Image(filename="resources/icons/cellref.png"),
+        Hoverable(),
+    )
+    world.create_entity(
+        Name("Cellref Dropper"),
+        Button(),
+        ToolSwitcher(Tool.CELLREF_DROPPER),
+        Pressable(),
+        Position(2 + 8 * 5, 2, space=PositionSpace.SCREEN),
+        Extent(8, 8),
+        Image(filename="resources/icons/cellref_dropper.png"),
         Hoverable(),
     )
 
