@@ -1,9 +1,10 @@
-dream table (working title)
+dream table
 
 - it's like a spreadsheet for pixel art
 - you start out with an infinite empty grid
 - click and drag to create thingies
 - wire them together to create game assets
+- (someday) like a fantasy console exploded onto your desk
 
 - design goals
   - modular
@@ -11,14 +12,18 @@ dream table (working title)
   - minimalist
   - keyboard friendly
 
-- what to work on
-  > ECS port
+- workflows I want to enable
+  - draw a tilemap that refers to a sprite sheet, and updates when you draw on it
+  - export as sprite sheets or slices
+
+- what to work on next
   - cellref tool
-  > right click drag on canvas thingies to resize
-  - scaling (s + wheel)
-  - import via drag and drop
+  - right click drag on canvas thingies to resize
+  - canvas scaling
 
 - thingies
+  - a thingy is a... thingy that users can place on the infinite grid
+
   - canvases
     - a canvas is a 2d array of pixels that you can draw on
     - has a width and height and a scale (default = 1)
@@ -65,11 +70,6 @@ dream table (working title)
   - exporters
     - write to disk as sheets or individual files
 
-- workflows I want to enable
-  - draw a tilemap that refers to a sprite sheet, and updates when you draw on it
-  - build your own editor
-  - export in a variety of formats
-
 - polish / stretch
   - UI themes (gotham, solarized, monochrome dark, monochrome light)
   - customizable UI bitmaps (font, 9-patch window decorations)
@@ -80,7 +80,7 @@ dream table (working title)
   - zoom to fit selected objects
   - change zoom on window resize
   - touch support
-  - drag and drop
+  - import via drag and drop
   - shift+select to expand selection
   - move all selected thingies
   - copy and paste palette strings (or individual colors)
@@ -94,8 +94,7 @@ dream table (working title)
   - ecosystem compat (aseprite, tiled, godot)
   - load fantasy console carts (pico-8, tic-80...)
 
-- extremely wild ideas!
+- really out there ideas
+  - HAL (raylib, PySDL2, others?)
   - scripting (lua or python or whatever)
-  - make it a fantasy console, lol
-    - like a fantasy console exploded onto your desk
-  - audio synthesis and code
+  - audio synthesis
