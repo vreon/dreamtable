@@ -12,46 +12,11 @@ dream table (working title)
   - keyboard friendly
 
 - what to work on
-  x right click drag to create new canvas thingies
-  x selection and deletion
-  x left click drag to move canvas thingies
-  x draw tool
-  x dropper tool
-  x grid tool
-  x screen space should have a camera
-  x MANIFEST.in
   > ECS port
   - cellref tool
-  x modal tools / tool thingy
   > right click drag on canvas thingies to resize
   - scaling (s + wheel)
   - import via drag and drop
-
-- controls
-  x on grid
-    x left click: deselect
-    x left click drag: box select
-    x middle click drag: pan
-    x right click: create a thingy
-
-  - on a canvas thingy
-    x left click: select
-    x left click drag: move
-    - right click: change kind or metadata
-    > right click drag: resize
-
-- tools
-  x x - draw
-  x c - eyedropper
-  - f - fill
-  - v - line
-  - e - eraser
-  - b - box
-  - s - scale
-  x g - adjust grid
-  - t - cellref paint
-  - r - cellref dropper
-  - y - cellref fill
 
 - thingies
   - canvases
