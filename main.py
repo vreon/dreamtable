@@ -43,6 +43,7 @@ class Tool(Enum):
     GRID = 4
     CELLREF = 5
     CELLREF_DROPPER = 6
+    EGG = 7
 
 
 Color = Tuple[int, int, int, int]
@@ -138,7 +139,7 @@ class Velocity:
 
 
 @dataclass
-class Jitter:
+class Wandering:
     interval: int = 100
     tick: int = 100
     force: float = 5.0
@@ -248,6 +249,25 @@ class Image:
 
 
 @dataclass
+class SpriteRegion:
+    x: int = 0
+    y: int = 0
+    tint: Color = (255, 255, 255, 255)
+
+
+@dataclass
+class EggTimer:
+    time_left: int = 0
+
+
+@dataclass
+class TinyFriend:
+    # 0: bunny, 1: spider, 2: chick, 3: slime
+    type: int = 0
+    angle: float = 0
+
+
+@dataclass
 class DebugEntity:
     pass
 
@@ -272,16 +292,17 @@ class MotionController(esper.Processor):
 
 
 # debug
-class JitterController(esper.Processor):
+class WanderingController(esper.Processor):
     """Kick objects around a bit."""
 
     def process(self):
-        for _, (vel, jit) in self.world.get_components(Velocity, Jitter):
+        for _, (vel, jit) in self.world.get_components(Velocity, Wandering):
             jit.tick -= 1
             if jit.tick == 0:
                 jit.tick = jit.interval
-                vel.x = random.randint(-jit.force, jit.force)
-                vel.y = random.randint(-jit.force, jit.force)
+                vel.x, vel.y = make_random_vector(2)
+                vel.x *= jit.force
+                vel.y *= jit.force
 
 
 class DebugEntityRenderer(esper.Processor):
@@ -751,7 +772,7 @@ class ImageController(esper.Processor):
 
                 img.image_data = pyray.get_image_data(img.image)
 
-                for ext in self.world.try_component(ent, Extent):
+                for (_, ext) in self.world.try_components(ent, Canvas, Extent):
                     ext.width = img.image.width
                     ext.height = img.image.height
 
@@ -921,6 +942,7 @@ class ToolSwitcherController(esper.Processor):
             pyray.KEY_R: Tool.GRID,
             pyray.KEY_T: Tool.CELLREF,
             pyray.KEY_Y: Tool.CELLREF_DROPPER,
+            pyray.KEY_U: Tool.EGG,
         }
 
     def process(self):
@@ -1231,6 +1253,88 @@ class GridToolRenderer(esper.Processor):
             pyray.end_mode_2d()
 
 
+class SpriteRegionRenderer(esper.Processor):
+    def process(self):
+        context = self.world.context
+        for ent, (pos, ext, spr, img) in self.world.get_components(
+            Position, Extent, SpriteRegion, Image
+        ):
+            camera = context.cameras[pos.space]
+            pyray.begin_mode_2d(camera)
+            source_rect = pyray.Rectangle(
+                int(spr.x), int(spr.y), int(ext.width), int(ext.height)
+            )
+            dest_pos = (int(pos.x), int(pos.y))
+            pyray.draw_texture_rec(img.texture, source_rect, dest_pos, spr.tint)
+            pyray.end_mode_2d()
+
+
+class EggToolController(esper.Processor):
+    def process(self):
+        if not self.world.context.tool == Tool.EGG:
+            return
+
+        context = self.world.context
+        mouse_pos_x = context.mouse_pos_x
+        mouse_pos_y = context.mouse_pos_y
+        camera = context.cameras[PositionSpace.WORLD]
+        click_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
+
+        if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
+            # todo lots of duplicate loading of images/textures
+            # should share these somehow / unload them on exit!
+            self.world.create_entity(
+                Name("Mystery egg"),
+                Position(click_pos.x - 8, click_pos.y - 12),
+                Extent(16, 16),
+                Draggable(),
+                Hoverable(),
+                Selectable(),
+                Deletable(),
+                EggTimer(time_left=random.randint(200, 500)),
+                Image(filename="resources/sprites/16x16babies.png"),
+                SpriteRegion(88, 65),
+            )
+
+
+class EggTimerController(esper.Processor):
+    def process(self):
+        for ent, egg in self.world.get_component(EggTimer):
+            egg.time_left -= 1
+
+            if egg.time_left <= 0:
+                # todo spawn an effect
+                self.world.remove_component(ent, EggTimer)
+                self.world.add_component(ent, Name("A tiny friend"))
+                self.world.add_component(ent, Velocity(friction=0.8))
+                self.world.add_component(ent, Wandering(force=random.random() * 3 + 1))
+                self.world.add_component(ent, TinyFriend(type=random.randint(0, 3)))
+
+
+class TinyFriendController(esper.Processor):
+    def process(self):
+        for ent, (friend, vel, spr) in self.world.get_components(
+            TinyFriend, Velocity, SpriteRegion
+        ):
+            base_cell_x = friend.type * 4
+            anim_cell_x = 0  # todo
+            cell_x = base_cell_x + anim_cell_x
+
+            if abs(vel.x) > EPSILON and abs(vel.y) > EPSILON:
+                friend.angle = (math.atan2(vel.y, vel.x) + math.pi) / (2 * math.pi)
+
+            # fmt: off
+            cell_y = 1
+            if friend.angle < 0.125:   cell_y = 1  # noqa
+            elif friend.angle < 0.375: cell_y = 3  # noqa
+            elif friend.angle < 0.625: cell_y = 2  # noqa
+            elif friend.angle < 0.875: cell_y = 0  # noqa
+            # fmt: on
+
+            spr.x = cell_x * 16
+            spr.y = cell_y * 16
+
+
 ################################################################################
 # Helpers
 
@@ -1272,6 +1376,12 @@ def aabb(x1, y1, x2, y2, snap_x=0, snap_y=0):
 
 def get_outline_rect(rect):
     return pyray.Rectangle(rect.x - 1, rect.y - 1, rect.width + 2, rect.height + 2)
+
+
+def make_random_vector(dims):
+    vec = [random.gauss(0, 1) for i in range(dims)]
+    mag = sum(x ** 2 for x in vec) ** 0.5
+    return [x / mag for x in vec]
 
 
 ################################################################################
@@ -1470,24 +1580,11 @@ def main():
         Extent(32, 32),
     )
 
-    # debug: a fun lil' testangle
-    world.create_entity(
-        Name("Testangle"),
-        Position(),
-        Velocity(5, 5, friction=0.9),
-        Extent(40, 10),
-        Jitter(),
-        DebugEntity(),
-        Draggable(),
-        Hoverable(),
-        Selectable(),
-    )
-
     # debug: a draggable to drag around
     world.create_entity(
         Name("Draggable"),
-        Position(40, 40, space=PositionSpace.SCREEN),
-        Extent(40, 10),
+        Position(214, 2, space=PositionSpace.SCREEN),
+        Extent(50, 12),
         DebugEntity(),
         Hoverable(),
         Draggable(),
@@ -1568,6 +1665,16 @@ def main():
         Image(filename="resources/icons/cellref_dropper.png"),
         Hoverable(),
     )
+    world.create_entity(
+        Name("Mystery Egg"),
+        Button(),
+        ToolSwitcher(Tool.EGG),
+        Pressable(),
+        Position(2 + 8 * 6, 2, space=PositionSpace.SCREEN),
+        Extent(8, 8),
+        Image(filename="resources/icons/egg.png"),
+        Hoverable(),
+    )
 
     # Register controllers and renderers (flavors of processors)
     world.add_processor(CameraContextController())
@@ -1575,6 +1682,7 @@ def main():
     world.add_processor(PencilToolController())
     world.add_processor(DropperToolController())
     world.add_processor(GridToolController())
+    world.add_processor(EggToolController())
     world.add_processor(DragController())
     world.add_processor(HoverController())
     world.add_processor(PressController())
@@ -1584,11 +1692,14 @@ def main():
 
     world.add_processor(CameraController())
     world.add_processor(MotionController())
-    world.add_processor(JitterController())
+    world.add_processor(WanderingController())
+    world.add_processor(EggTimerController())
+    world.add_processor(TinyFriendController())
 
     world.add_processor(BackgroundGridRenderer())
     world.add_processor(PositionMarkerRenderer())
     world.add_processor(CanvasRenderer())
+    world.add_processor(SpriteRegionRenderer())
     world.add_processor(DebugEntityRenderer())
     world.add_processor(BoxSelectionRenderer())
 
