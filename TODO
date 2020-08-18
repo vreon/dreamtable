@@ -19,13 +19,13 @@ dream table (working title)
   x dropper tool
   x grid tool
   x screen space should have a camera
+  x MANIFEST.in
   > ECS port
   - cellref tool
   x modal tools / tool thingy
   > right click drag on canvas thingies to resize
   - scaling (s + wheel)
   - import via drag and drop
-  - MANIFEST.in
 
 - controls
   x on grid
