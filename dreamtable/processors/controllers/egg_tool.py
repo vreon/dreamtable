@@ -7,7 +7,7 @@ from raylib.pyray import PyRay
 from dreamtable import components as c
 from dreamtable.constants import PositionSpace, Tool
 
-pkg_path = Path(__file__).parent.parent
+pkg_path = Path(__file__).parent.parent.parent  # todo lol
 
 
 class EggToolController(esper.Processor):
