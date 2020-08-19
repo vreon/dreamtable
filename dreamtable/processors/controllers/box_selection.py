@@ -1,9 +1,10 @@
-import esper
-from raylib.pyray import PyRay
 from typing import Dict, List, Tuple
 
+import esper
+from raylib.pyray import PyRay
+
 from dreamtable import components as c
-from dreamtable.constants import SelectionType, PositionSpace
+from dreamtable.constants import PositionSpace, SelectionType
 from dreamtable.utils import get_aabb, rect_rect_intersect
 
 

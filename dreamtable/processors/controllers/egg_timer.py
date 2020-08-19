@@ -1,6 +1,7 @@
+import random
+
 import esper
 from raylib.pyray import PyRay
-import random
 
 from dreamtable import components as c
 

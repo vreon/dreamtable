@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Tuple
 from dataclasses import dataclass, field
+from typing import Any, Mapping, Optional, Tuple
 
 from .constants import PositionSpace, SelectionType, Tool
 

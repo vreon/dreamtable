@@ -1,11 +1,11 @@
+import random
+from pathlib import Path
+
 import esper
 from raylib.pyray import PyRay
-from pathlib import Path
-import random
 
 from dreamtable import components as c
-from dreamtable.constants import Tool, PositionSpace
-
+from dreamtable.constants import PositionSpace, Tool
 
 pkg_path = Path(__file__).parent.parent
 
