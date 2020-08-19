@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 EPSILON = 1e-5
@@ -7,20 +7,20 @@ EPSILON = 1e-5
 # todo: these are really more like layers
 # consider moving Position.space to Layer.layer
 class PositionSpace(Enum):
-    WORLD = 1
-    SCREEN = 2
+    WORLD = auto()
+    SCREEN = auto()
 
 
 class SelectionType(Enum):
-    NORMAL = 1
-    CREATE = 2
+    NORMAL = auto()
+    CREATE = auto()
 
 
 class Tool(Enum):
-    MOVE = 1
-    PENCIL = 2
-    DROPPER = 3
-    GRID = 4
-    CELLREF = 5
-    CELLREF_DROPPER = 6
-    EGG = 7
+    MOVE = auto()
+    PENCIL = auto()
+    DROPPER = auto()
+    GRID = auto()
+    CELLREF = auto()
+    CELLREF_DROPPER = auto()
+    EGG = auto()
