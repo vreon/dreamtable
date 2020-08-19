@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, Tuple
+from typing import Any, Mapping, Optional, Tuple
 from dataclasses import dataclass, field
 
 from .constants import PositionSpace, SelectionType, Tool
@@ -24,7 +24,7 @@ class WorldContext:
     # switch to another tool by holding a key combination (e.g. PENCIL + Alt =
     # DROPPER). This attribute stores which tool we will return to when the key
     # combo is released.
-    underlying_tool: Tool = None
+    underlying_tool: Optional[Tool] = None
 
     color_primary: Color = (255, 255, 255, 255)
     color_secondary: Color = (0, 0, 0, 255)
@@ -36,8 +36,8 @@ class WorldContext:
     snap_x: int = 8
     snap_y: int = 8
 
-    mouse_pos_x: int = None
-    mouse_pos_y: int = None
+    mouse_pos_x: Optional[int] = None
+    mouse_pos_y: Optional[int] = None
     mouse_delta_x: int = 0
     mouse_delta_y: int = 0
     mouse_wheel: int = 0
@@ -192,7 +192,7 @@ class Image:
     image: Any = None
     texture: Any = None
     image_data: Any = None
-    filename: str = None
+    filename: Optional[str] = None
     dirty: bool = False
 
 
