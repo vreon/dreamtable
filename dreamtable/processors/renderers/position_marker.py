@@ -2,12 +2,13 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for _, (pos, mark) in self.world.get_components(c.Position, c.PositionMarker):

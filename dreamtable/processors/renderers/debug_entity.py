@@ -3,12 +3,13 @@ from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.utils import get_outline_rect
+from dreamtable.hal import HAL, Vector2D, Color
 
 
 class DebugEntityRenderer(esper.Processor):
     """Draws a basic spatial representation of the entity, for debugging."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for ent, (_, pos, ext) in self.world.get_components(
@@ -40,13 +41,18 @@ class DebugEntityRenderer(esper.Processor):
             for name in self.world.try_component(ent, c.Name):
                 font_size = 8
                 spacing = 1
-                measurement = pyray.measure_text_ex(
+                measurement = hal.measure_text(
                     theme.font, name.name, font_size, spacing
                 )
                 x = (pos.x + ext.width / 2) - measurement.x / 2
                 y = (pos.y + ext.height / 2) - measurement.y / 2
-                pyray.draw_text_ex(
-                    theme.font, name.name, (int(x), int(y)), font_size, spacing, color,
+                hal.draw_text(
+                    theme.font,
+                    name.name,
+                    Vector2D(int(x), int(y)),
+                    font_size,
+                    spacing,
+                    Color(*color),
                 )
 
             pyray.end_mode_2d()

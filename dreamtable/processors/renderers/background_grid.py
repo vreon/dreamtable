@@ -3,12 +3,13 @@ from raylib.pyray import PyRay
 
 from dreamtable.constants import PositionSpace
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class BackgroundGridRenderer(esper.Processor):
     """Draws BackgroundGrids."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         camera = self.world.context.cameras[PositionSpace.WORLD]
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()

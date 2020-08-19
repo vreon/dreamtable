@@ -3,12 +3,13 @@ from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import EPSILON
+from dreamtable.hal import HAL
 
 
 class CameraController(esper.Processor):
     """Update cameras in response to events."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
 

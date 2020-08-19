@@ -6,12 +6,13 @@ from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import PositionSpace, Tool
+from dreamtable.hal import HAL
 
 pkg_path = Path(__file__).parent.parent.parent  # todo lol
 
 
 class EggToolController(esper.Processor):
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         if not self.world.context.tool == Tool.EGG:
             return
 

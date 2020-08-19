@@ -4,10 +4,11 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class EggTimerController(esper.Processor):
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         for ent, egg in self.world.get_component(c.EggTimer):
             egg.time_left -= 1
 

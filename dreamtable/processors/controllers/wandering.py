@@ -3,12 +3,13 @@ from raylib.pyray import PyRay
 
 from dreamtable.utils import make_random_vector
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class WanderingController(esper.Processor):
     """Kick objects around a bit."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         for _, (vel, jit) in self.world.get_components(c.Velocity, c.Wandering):
             jit.tick -= 1
             if jit.tick == 0:

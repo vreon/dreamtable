@@ -3,12 +3,13 @@ from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import EPSILON
+from dreamtable.hal import HAL
 
 
 class MotionController(esper.Processor):
     """Newtonian dynamics."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         for _, (vel, pos) in self.world.get_components(c.Velocity, c.Position):
             pos.x += vel.x
             pos.y += vel.y

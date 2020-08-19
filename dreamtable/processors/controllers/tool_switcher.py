@@ -3,6 +3,7 @@ from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
+from dreamtable.hal import HAL
 
 
 class ToolSwitcherController(esper.Processor):
@@ -17,7 +18,7 @@ class ToolSwitcherController(esper.Processor):
             pyray.KEY_U: Tool.EGG,
         }
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         context = self.world.context
 
         # Update the current tool if we pressed a tool switcher

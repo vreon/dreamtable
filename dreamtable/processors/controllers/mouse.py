@@ -1,11 +1,13 @@
 import esper
 from raylib.pyray import PyRay
 
+from dreamtable.hal import HAL
+
 
 class MouseController(esper.Processor):
     """Updates Mouse state."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         context = self.world.context
         context.mouse_wheel = pyray.get_mouse_wheel_move()
         mouse_pos = pyray.get_mouse_position()

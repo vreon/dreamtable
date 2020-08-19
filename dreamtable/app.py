@@ -1,34 +1,43 @@
 from pathlib import Path
 
 import esper
-from raylib.pyray import PyRay
 
 from . import components as c
 from . import processors as p
 from .constants import PositionSpace, Tool
+from .hal.pyray import PyRayHAL
 
 pkg_path = Path(__file__).parent
 
 
 def run() -> None:
-    pyray = PyRay()
+    hal = PyRayHAL()
+    hal.init_window(800, 600, "Dream Table")
 
-    # pyray.set_config_flags(pyray.FLAG_WINDOW_RESIZABLE)
-    pyray.init_window(800, 600, "Dream Table")
-    pyray.set_target_fps(60)
+    hal.load_font("res://fonts/alpha_beta.png")
+
+    for resource_path in [
+        "res://palettes/sweetie-16-8x.png",
+        "res://icons/hand.png",
+        "res://icons/pencil.png",
+        "res://icons/dropper.png",
+        "res://icons/grid.png",
+        "res://icons/cellref.png",
+        "res://icons/cellref_dropper.png",
+        "res://icons/egg.png",
+    ]:
+        hal.load_image(resource_path)
 
     world = esper.World()
     world.context = c.WorldContext(
-        cameras={PositionSpace.SCREEN: pyray.Camera2D((0, 0), (0, 0), 0, 3)},
-        theme=c.Theme(
-            font=pyray.load_font(str(pkg_path / "resources/fonts/alpha_beta.png"))
-        ),
+        cameras={PositionSpace.SCREEN: hal.pyray.Camera2D((0, 0), (0, 0), 0, 3)},
+        theme=c.Theme(font="res://fonts/alpha_beta.png"),
     )
 
     # Spawn initial entities
     world.create_entity(
         c.Name("Camera"),
-        c.Camera(active=True, camera_2d=pyray.Camera2D((0, 0), (0, 0), 0, 4)),
+        c.Camera(active=True, camera_2d=hal.pyray.Camera2D((0, 0), (0, 0), 0, 4)),
     )
     world.create_entity(c.Name("Origin"), c.Position(), c.PositionMarker())
     world.create_entity(
@@ -59,7 +68,7 @@ def run() -> None:
         c.Canvas(),
         c.Position(),
         c.Extent(),
-        c.Image(filename=str(pkg_path / "resources/palettes/sweetie-16-8x.png")),
+        c.Image(filename="res://palettes/sweetie-16-8x.png"),
         c.Draggable(),
         c.Hoverable(),
         c.Selectable(),
@@ -74,7 +83,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 0, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/hand.png")),
+        c.Image(filename="res://icons/hand.png"),
         c.Hoverable(),
     )
     world.create_entity(
@@ -84,7 +93,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 1, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/pencil.png")),
+        c.Image(filename="res://resources/icons/pencil.png"),
         c.Hoverable(),
     )
     world.create_entity(
@@ -94,7 +103,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 2, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/dropper.png")),
+        c.Image(filename="res://icons/dropper.png"),
         c.Hoverable(),
     )
     world.create_entity(
@@ -104,7 +113,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 3, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/grid.png")),
+        c.Image(filename="res://icons/grid.png"),
         c.Hoverable(),
     )
     world.create_entity(
@@ -114,7 +123,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 4, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/cellref.png")),
+        c.Image(filename="res://icons/cellref.png"),
         c.Hoverable(),
     )
     world.create_entity(
@@ -124,7 +133,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 5, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/cellref_dropper.png")),
+        c.Image(filename="res://icons/cellref_dropper.png"),
         c.Hoverable(),
     )
     world.create_entity(
@@ -134,7 +143,7 @@ def run() -> None:
         c.Pressable(),
         c.Position(2 + 8 * 6, 2, space=PositionSpace.SCREEN),
         c.Extent(8, 8),
-        c.Image(filename=str(pkg_path / "resources/icons/egg.png")),
+        c.Image(filename="res://icons/egg.png"),
         c.Hoverable(),
     )
 
@@ -153,7 +162,7 @@ def run() -> None:
         p.PressController(),
         p.BoxSelectionController(),
         p.ImageController(),
-        p.ToolSwitcherController(pyray),
+        p.ToolSwitcherController(hal.pyray),
         p.CanvasExportController(),
         p.CameraController(),
         p.MotionController(),
@@ -179,10 +188,4 @@ def run() -> None:
     ]:
         world.add_processor(processor)
 
-    while not pyray.window_should_close():
-        pyray.begin_drawing()
-        pyray.clear_background(world.context.theme.color_background)
-        world.process(pyray)
-        pyray.end_drawing()
-
-    pyray.close_window()
+    hal.main(world)

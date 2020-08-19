@@ -3,10 +3,11 @@ from raylib.pyray import PyRay
 
 from dreamtable.constants import Tool
 from dreamtable.utils import get_outline_rect
+from dreamtable.hal import HAL
 
 
 class PencilToolRenderer(esper.Processor):
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         context = self.world.context
 
         if context.tool not in (Tool.PENCIL, Tool.DROPPER):

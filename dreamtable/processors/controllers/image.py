@@ -2,12 +2,13 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class ImageController(esper.Processor):
     """Load images, create textures, and keep them in sync."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         for ent, img in self.world.get_component(c.Image):
             if not img.image and img.filename:
                 img.image = pyray.load_image(img.filename)

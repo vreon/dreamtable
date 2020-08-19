@@ -2,10 +2,11 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class ButtonRenderer(esper.Processor):
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for ent, (pos, ext, btn) in self.world.get_components(

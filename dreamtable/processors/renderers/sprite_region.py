@@ -2,10 +2,11 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class SpriteRegionRenderer(esper.Processor):
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         context = self.world.context
         for ent, (pos, ext, spr, img) in self.world.get_components(
             c.Position, c.Extent, c.SpriteRegion, c.Image

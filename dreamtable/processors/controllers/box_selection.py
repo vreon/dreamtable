@@ -6,12 +6,13 @@ from raylib.pyray import PyRay
 from dreamtable import components as c
 from dreamtable.constants import PositionSpace, SelectionType
 from dreamtable.utils import get_aabb, rect_rect_intersect
+from dreamtable.hal import HAL
 
 
 class BoxSelectionController(esper.Processor):
     """Updates selection regions."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         mouse_pos_x = self.world.context.mouse_pos_x
         mouse_pos_y = self.world.context.mouse_pos_y
         # Are we hovering over anything? If so, we can't create selections

@@ -3,12 +3,13 @@ from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import SelectionType
+from dreamtable.hal import HAL
 
 
 class BoxSelectionRenderer(esper.Processor):
     """Draws selection regions."""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for _, (pos, ext, sel) in self.world.get_components(

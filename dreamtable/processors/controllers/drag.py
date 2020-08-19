@@ -4,10 +4,11 @@ from raylib.pyray import PyRay
 from dreamtable import components as c
 from dreamtable.constants import Tool
 from dreamtable.utils import point_rect_intersect
+from dreamtable.hal import HAL
 
 
 class DragController(esper.Processor):
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         if not self.world.context.tool == Tool.MOVE:
             return
 

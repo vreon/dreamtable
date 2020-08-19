@@ -4,12 +4,13 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
+from dreamtable.hal import HAL
 
 
 class CanvasExportController(esper.Processor):
     """Export selected Canvas images to a directory"""
 
-    def process(self, pyray: PyRay) -> None:
+    def process(self, pyray: PyRay, hal: HAL) -> None:
         is_control_down = pyray.is_key_down(
             pyray.KEY_LEFT_CONTROL
         ) or pyray.is_key_down(pyray.KEY_RIGHT_CONTROL)
