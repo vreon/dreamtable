@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..constants import Tool
 from ..components import Canvas, Position, Extent, CellGrid
@@ -6,7 +7,7 @@ from ..utils import point_rect_intersect
 
 
 class GridToolController(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         if not self.world.context.tool == Tool.GRID:
             return
 
@@ -18,10 +19,10 @@ class GridToolController(esper.Processor):
             Canvas, Position, Extent, CellGrid
         ):
             camera = self.world.context.cameras[pos.space]
-            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            rect_tuple = (pos.x, pos.y, ext.width, ext.height)
             mouse_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
 
-            if not point_rect_intersect(mouse_pos.x, mouse_pos.y, rect):
+            if not point_rect_intersect(mouse_pos.x, mouse_pos.y, *rect_tuple):
                 continue
 
             cellgrid.x += context.mouse_wheel

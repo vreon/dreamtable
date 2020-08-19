@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Deletable
 
@@ -10,7 +11,7 @@ class FinalDeleteController(esper.Processor):
     delete the actual entity, that's this thing's job.)
     """
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         for ent, del_ in self.world.get_component(Deletable):
             if del_.deleted:
                 self.world.delete_entity(ent)

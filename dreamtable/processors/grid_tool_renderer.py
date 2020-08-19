@@ -1,11 +1,12 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Canvas, Position, Extent, CellGrid
 from ..constants import Tool
 
 
 class GridToolRenderer(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         context = self.world.context
 
         if not context.tool == Tool.GRID:

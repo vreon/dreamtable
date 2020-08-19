@@ -67,7 +67,7 @@ pkg_path = Path(__file__).parent
 ################################################################################
 
 
-def main():
+def main() -> None:
     pyray = PyRay()
 
     # pyray.set_config_flags(pyray.FLAG_WINDOW_RESIZABLE)

@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import (
     Canvas,
@@ -16,7 +17,7 @@ from ..utils import get_outline_rect
 class CanvasRenderer(esper.Processor):
     """Draws Canvases and their images."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         theme = self.world.context.theme
 
         for ent, (canvas, pos, ext) in self.world.get_components(
@@ -43,13 +44,9 @@ class CanvasRenderer(esper.Processor):
                 if sel.selected:
                     outline_color = theme.color_thingy_selected_outline
 
-            rect = pyray.Rectangle(
-                int(pos.x), int(pos.y), int(ext.width), int(ext.height),
-            )
-            outline_rect = pyray.Rectangle(*get_outline_rect(rect))
-            pyray.draw_rectangle_lines_ex(
-                outline_rect, 1, outline_color,
-            )
+            rect_tuple = (int(pos.x), int(pos.y), int(ext.width), int(ext.height))
+            outline_rect = pyray.Rectangle(*get_outline_rect(*rect_tuple))
+            pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
 
             # todo: draw ref'd cells
             # for cell_y, cell_ref_row in enumerate(self.cell_refs):

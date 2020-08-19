@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 from pathlib import Path
 import random
 
@@ -21,7 +22,7 @@ pkg_path = Path(__file__).parent.parent
 
 
 class EggToolController(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         if not self.world.context.tool == Tool.EGG:
             return
 

@@ -1,12 +1,13 @@
 import esper
 import math
+from raylib.pyray import PyRay
 
 from ..components import TinyFriend, Velocity, SpriteRegion
 from ..constants import EPSILON
 
 
 class TinyFriendController(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         for ent, (friend, vel, spr) in self.world.get_components(
             TinyFriend, Velocity, SpriteRegion
         ):

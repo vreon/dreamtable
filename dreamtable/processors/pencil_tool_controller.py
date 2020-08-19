@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Canvas, Position, Extent, Image
 from ..constants import Tool
@@ -6,12 +7,12 @@ from ..utils import draw_line, point_rect_intersect
 
 
 class PencilToolController(esper.Processor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.last_pos_x = None
         self.last_pos_y = None
         self.drawing = False
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         if not self.world.context.tool == Tool.PENCIL:
             return
 
@@ -22,7 +23,7 @@ class PencilToolController(esper.Processor):
             Canvas, Position, Extent, Image
         ):
             camera = self.world.context.cameras[pos.space]
-            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            rect_tuple = (pos.x, pos.y, ext.width, ext.height)
             pencil_pos = pyray.get_screen_to_world_2d(
                 (mouse_pos_x, mouse_pos_y), camera
             )
@@ -38,7 +39,7 @@ class PencilToolController(esper.Processor):
             if (
                 (self.drawing or not self.world.context.mouse_reserved)
                 and mouse_button_down
-                and point_rect_intersect(pencil_pos.x, pencil_pos.y, rect)
+                and point_rect_intersect(pencil_pos.x, pencil_pos.y, *rect_tuple)
             ):
                 self.world.context.mouse_reserved = True
                 self.drawing = True

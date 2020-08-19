@@ -1,10 +1,11 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Position, Extent, Button, Hoverable, Image
 
 
 class ButtonRenderer(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         theme = self.world.context.theme
 
         for ent, (pos, ext, btn) in self.world.get_components(Position, Extent, Button):

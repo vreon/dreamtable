@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Position, Extent, BoxSelection
 from ..constants import SelectionType
@@ -7,7 +8,7 @@ from ..constants import SelectionType
 class BoxSelectionRenderer(esper.Processor):
     """Draws selection regions."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         theme = self.world.context.theme
 
         for _, (pos, ext, sel) in self.world.get_components(

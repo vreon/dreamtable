@@ -1,11 +1,12 @@
 import esper
+from raylib.pyray import PyRay
 from ..components import Position, PositionMarker
 
 
 class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         theme = self.world.context.theme
 
         for _, (pos, mark) in self.world.get_components(Position, PositionMarker):

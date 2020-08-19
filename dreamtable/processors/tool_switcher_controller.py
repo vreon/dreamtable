@@ -1,11 +1,12 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import ToolSwitcher, Pressable, Button
 from ..constants import Tool
 
 
 class ToolSwitcherController(esper.Processor):
-    def __init__(self, pyray):
+    def __init__(self, pyray: PyRay) -> None:
         self.hotkeys = {
             pyray.KEY_Q: Tool.MOVE,
             pyray.KEY_W: Tool.PENCIL,
@@ -16,7 +17,7 @@ class ToolSwitcherController(esper.Processor):
             pyray.KEY_U: Tool.EGG,
         }
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         context = self.world.context
 
         # Update the current tool if we pressed a tool switcher

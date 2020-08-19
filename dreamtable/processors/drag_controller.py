@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..constants import Tool
 from ..components import Position, Extent, Draggable
@@ -6,7 +7,7 @@ from ..utils import point_rect_intersect
 
 
 class DragController(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         if not self.world.context.tool == Tool.MOVE:
             return
 
@@ -18,11 +19,11 @@ class DragController(esper.Processor):
         ):
             camera = self.world.context.cameras[pos.space]
             drag_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
-            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            rect_tuple = (pos.x, pos.y, ext.width, ext.height)
             if (
                 not self.world.context.mouse_reserved
                 and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
-                and point_rect_intersect(drag_pos.x, drag_pos.y, rect)
+                and point_rect_intersect(drag_pos.x, drag_pos.y, *rect_tuple)
             ):
                 self.world.context.mouse_reserved = True
                 drag.dragging = True

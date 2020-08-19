@@ -1,10 +1,11 @@
 import esper
+from raylib.pyray import PyRay
 
 
 class MouseController(esper.Processor):
     """Updates Mouse state."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         context = self.world.context
         context.mouse_wheel = pyray.get_mouse_wheel_move()
         mouse_pos = pyray.get_mouse_position()

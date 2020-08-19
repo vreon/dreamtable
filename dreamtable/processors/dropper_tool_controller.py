@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..constants import Tool
 from ..components import Position, Extent, Canvas, Image
@@ -6,10 +7,10 @@ from ..utils import point_rect_intersect
 
 
 class DropperToolController(esper.Processor):
-    def __init__(self):
+    def __init__(self) -> None:
         self.color = None
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         context = self.world.context
 
         if context.tool != Tool.DROPPER:
@@ -24,12 +25,12 @@ class DropperToolController(esper.Processor):
             Position, Extent, Canvas, Image
         ):
             camera = self.world.context.cameras[pos.space]
-            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            rect_tuple = (pos.x, pos.y, ext.width, ext.height)
             dropper_pos = pyray.get_screen_to_world_2d(
                 (mouse_pos_x, mouse_pos_y), camera
             )
 
-            if point_rect_intersect(dropper_pos.x, dropper_pos.y, rect):
+            if point_rect_intersect(dropper_pos.x, dropper_pos.y, *rect_tuple):
                 x = int(dropper_pos.x - pos.x)
                 y = int(dropper_pos.y - pos.y)
                 context.color_dropper = pyray.get_image_data(img.image)[

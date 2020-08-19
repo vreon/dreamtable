@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..constants import EPSILON
 from ..components import Velocity, Position
@@ -7,7 +8,7 @@ from ..components import Velocity, Position
 class MotionController(esper.Processor):
     """Newtonian dynamics."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         for _, (vel, pos) in self.world.get_components(Velocity, Position):
             pos.x += vel.x
             pos.y += vel.y

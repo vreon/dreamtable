@@ -1,4 +1,6 @@
 import esper
+from raylib.pyray import PyRay
+from typing import Dict, List, Tuple
 
 from ..components import (
     Hoverable,
@@ -20,7 +22,7 @@ from ..utils import get_aabb, rect_rect_intersect
 class BoxSelectionController(esper.Processor):
     """Updates selection regions."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         mouse_pos_x = self.world.context.mouse_pos_x
         mouse_pos_y = self.world.context.mouse_pos_y
         # Are we hovering over anything? If so, we can't create selections
@@ -67,14 +69,16 @@ class BoxSelectionController(esper.Processor):
                 )
 
         # Identify selectables
-        selectables_by_space = {
+        selectables_by_space: Dict[
+            PositionSpace, List[Tuple[Selectable, Tuple[float, float, float, float]]]
+        ] = {
             PositionSpace.WORLD: [],
             PositionSpace.SCREEN: [],
         }
         for ent, (pos, ext, selectable) in self.world.get_components(
             Position, Extent, Selectable
         ):
-            rect = pyray.Rectangle(pos.x, pos.y, ext.width, ext.height)
+            rect = (pos.x, pos.y, ext.width, ext.height)
             selectables_by_space[pos.space].append((selectable, rect))
 
         # Update pos/ext, selectables, and handle release actions
@@ -90,21 +94,14 @@ class BoxSelectionController(esper.Processor):
                 else (1, 1)
             )
 
-            selection_rect = pyray.Rectangle(
-                *get_aabb(
-                    selection.start_x,
-                    selection.start_y,
-                    end_pos.x,
-                    end_pos.y,
-                    snap_x,
-                    snap_y,
-                )
+            pos.x, pos.y, ext.width, ext.height = get_aabb(
+                selection.start_x,
+                selection.start_y,
+                end_pos.x,
+                end_pos.y,
+                snap_x,
+                snap_y,
             )
-
-            pos.x = selection_rect.x
-            pos.y = selection_rect.y
-            ext.width = selection_rect.width
-            ext.height = selection_rect.height
 
             # todo Squarify region
             # if pyray.is_key_down(pyray.KEY_LEFT_CONTROL) or pyray.is_key_down(
@@ -117,9 +114,9 @@ class BoxSelectionController(esper.Processor):
 
             # Update selectable entities
             if selection.type == SelectionType.NORMAL:
-                for selectable, selectable_rect in selectables_by_space[pos.space]:
+                for selectable, (sx, sy, sw, sh) in selectables_by_space[pos.space]:
                     selectable.selected = rect_rect_intersect(
-                        selectable_rect, selection_rect
+                        sx, sy, sw, sh, pos.x, pos.y, ext.width, ext.height
                     )
 
             # Handle selection complete
@@ -137,13 +134,13 @@ class BoxSelectionController(esper.Processor):
                 self.world.context.mouse_reserved = False
                 self.world.create_entity(
                     Name("Canvas"),
-                    Position(selection_rect.x, selection_rect.y),
-                    Extent(selection_rect.width, selection_rect.height),
+                    Position(pos.x, pos.y),
+                    Extent(ext.width, ext.height),
                     Canvas(),
                     Image(
                         image=pyray.gen_image_color(
-                            int(selection_rect.width),
-                            int(selection_rect.height),
+                            int(ext.width),
+                            int(ext.height),
                             self.world.context.color_secondary,
                         )
                     ),

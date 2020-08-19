@@ -1,11 +1,12 @@
 import esper
+from raylib.pyray import PyRay
 import random
 
 from ..components import EggTimer, Name, Velocity, Wandering, TinyFriend
 
 
 class EggTimerController(esper.Processor):
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         for ent, egg in self.world.get_component(EggTimer):
             egg.time_left -= 1
 

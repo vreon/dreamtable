@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Image, Canvas, Extent
 
@@ -6,7 +7,7 @@ from ..components import Image, Canvas, Extent
 class ImageController(esper.Processor):
     """Load images, create textures, and keep them in sync."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         for ent, img in self.world.get_component(Image):
             if not img.image and img.filename:
                 img.image = pyray.load_image(img.filename)

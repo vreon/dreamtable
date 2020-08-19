@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import Camera
 from ..constants import EPSILON
@@ -7,7 +8,7 @@ from ..constants import EPSILON
 class CameraController(esper.Processor):
     """Update cameras in response to events."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
 

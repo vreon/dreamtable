@@ -1,4 +1,5 @@
 import esper
+from raylib.pyray import PyRay
 
 from ..components import DebugEntity, Position, Extent, Hoverable, Selectable, Name
 from ..utils import get_outline_rect
@@ -7,7 +8,7 @@ from ..utils import get_outline_rect
 class DebugEntityRenderer(esper.Processor):
     """Draws a basic spatial representation of the entity, for debugging."""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         theme = self.world.context.theme
 
         for ent, (_, pos, ext) in self.world.get_components(
@@ -16,15 +17,14 @@ class DebugEntityRenderer(esper.Processor):
             camera = self.world.context.cameras[pos.space]
             pyray.begin_mode_2d(camera)
 
-            rect = pyray.Rectangle(
-                int(pos.x), int(pos.y), int(ext.width), int(ext.height)
-            )
+            rect_tuple = int(pos.x), int(pos.y), int(ext.width), int(ext.height)
+            rect = pyray.Rectangle(*rect_tuple)
             color = theme.color_debug_magenta
 
             pyray.draw_rectangle_lines_ex(rect, 1, color)
 
             outline_color = None
-            outline_rect = pyray.Rectangle(*get_outline_rect(rect))
+            outline_rect = pyray.Rectangle(*get_outline_rect(*rect_tuple))
 
             for hov in self.world.try_component(ent, Hoverable):
                 if hov.hovered:

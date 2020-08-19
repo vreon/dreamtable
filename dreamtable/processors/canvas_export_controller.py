@@ -1,4 +1,5 @@
 from datetime import datetime
+from raylib.pyray import PyRay
 import esper
 
 from ..components import Canvas, Selectable, Image
@@ -7,7 +8,7 @@ from ..components import Canvas, Selectable, Image
 class CanvasExportController(esper.Processor):
     """Export selected Canvas images to a directory"""
 
-    def process(self, pyray):
+    def process(self, pyray: PyRay) -> None:
         is_control_down = pyray.is_key_down(
             pyray.KEY_LEFT_CONTROL
         ) or pyray.is_key_down(pyray.KEY_RIGHT_CONTROL)
