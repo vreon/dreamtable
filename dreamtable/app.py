@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from pathlib import Path
 
 from raylib.pyray import PyRay
@@ -64,10 +62,7 @@ from .processors import (
 pkg_path = Path(__file__).parent
 
 
-################################################################################
-
-
-def main() -> None:
+def run() -> None:
     pyray = PyRay()
 
     # pyray.set_config_flags(pyray.FLAG_WINDOW_RESIZABLE)
@@ -239,7 +234,3 @@ def main() -> None:
         pyray.end_drawing()
 
     pyray.close_window()
-
-
-if __name__ == "__main__":
-    main()
