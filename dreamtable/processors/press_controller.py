@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Position, Extent, Pressable
+from .. import components as c
 from ..utils import point_rect_intersect
 
 
@@ -11,7 +11,7 @@ class PressController(esper.Processor):
         mouse_pos_y = self.world.context.mouse_pos_y
 
         for ent, (pos, ext, press) in self.world.get_components(
-            Position, Extent, Pressable
+            c.Position, c.Extent, c.Pressable
         ):
             camera = self.world.context.cameras[pos.space]
             press_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)

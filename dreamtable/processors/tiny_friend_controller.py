@@ -2,14 +2,14 @@ import esper
 import math
 from raylib.pyray import PyRay
 
-from ..components import TinyFriend, Velocity, SpriteRegion
+from .. import components as c
 from ..constants import EPSILON
 
 
 class TinyFriendController(esper.Processor):
     def process(self, pyray: PyRay) -> None:
         for ent, (friend, vel, spr) in self.world.get_components(
-            TinyFriend, Velocity, SpriteRegion
+            c.TinyFriend, c.Velocity, c.SpriteRegion
         ):
             base_cell_x = friend.type * 4
             anim_cell_x = 0  # todo

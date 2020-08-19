@@ -1,14 +1,14 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Position, Extent, SpriteRegion, Image
+from .. import components as c
 
 
 class SpriteRegionRenderer(esper.Processor):
     def process(self, pyray: PyRay) -> None:
         context = self.world.context
         for ent, (pos, ext, spr, img) in self.world.get_components(
-            Position, Extent, SpriteRegion, Image
+            c.Position, c.Extent, c.SpriteRegion, c.Image
         ):
             camera = context.cameras[pos.space]
             pyray.begin_mode_2d(camera)

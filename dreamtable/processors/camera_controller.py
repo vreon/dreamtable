@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Camera
+from .. import components as c
 from ..constants import EPSILON
 
 
@@ -16,7 +16,7 @@ class CameraController(esper.Processor):
         mouse_delta_x = context.mouse_delta_x
         mouse_delta_y = context.mouse_delta_y
 
-        for _, cam in self.world.get_component(Camera):
+        for _, cam in self.world.get_component(c.Camera):
             if cam.active:
                 # pan
                 if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):

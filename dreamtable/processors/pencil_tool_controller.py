@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Canvas, Position, Extent, Image
+from .. import components as c
 from ..constants import Tool
 from ..utils import draw_line, point_rect_intersect
 
@@ -20,7 +20,7 @@ class PencilToolController(esper.Processor):
         mouse_pos_y = self.world.context.mouse_pos_y
 
         for ent, (canvas, pos, ext, img) in self.world.get_components(
-            Canvas, Position, Extent, Image
+            c.Canvas, c.Position, c.Extent, c.Image
         ):
             camera = self.world.context.cameras[pos.space]
             rect_tuple = (pos.x, pos.y, ext.width, ext.height)

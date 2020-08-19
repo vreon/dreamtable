@@ -2,18 +2,20 @@ import esper
 from raylib.pyray import PyRay
 import random
 
-from ..components import EggTimer, Name, Velocity, Wandering, TinyFriend
+from .. import components as c
 
 
 class EggTimerController(esper.Processor):
     def process(self, pyray: PyRay) -> None:
-        for ent, egg in self.world.get_component(EggTimer):
+        for ent, egg in self.world.get_component(c.EggTimer):
             egg.time_left -= 1
 
             if egg.time_left <= 0:
                 # todo spawn an effect
-                self.world.remove_component(ent, EggTimer)
-                self.world.add_component(ent, Name("A tiny friend"))
-                self.world.add_component(ent, Velocity(friction=0.8))
-                self.world.add_component(ent, Wandering(force=random.random() * 3 + 1))
-                self.world.add_component(ent, TinyFriend(type=random.randint(0, 3)))
+                self.world.remove_component(ent, c.EggTimer)
+                self.world.add_component(ent, c.Name("A tiny friend"))
+                self.world.add_component(ent, c.Velocity(friction=0.8))
+                self.world.add_component(
+                    ent, c.Wandering(force=random.random() * 3 + 1)
+                )
+                self.world.add_component(ent, c.TinyFriend(type=random.randint(0, 3)))

@@ -1,8 +1,8 @@
 import esper
 from raylib.pyray import PyRay
 
+from .. import components as c
 from ..constants import Tool
-from ..components import Position, Extent, Draggable
 from ..utils import point_rect_intersect
 
 
@@ -15,7 +15,7 @@ class DragController(esper.Processor):
         mouse_pos_y = self.world.context.mouse_pos_y
 
         for _, (pos, ext, drag) in self.world.get_components(
-            Position, Extent, Draggable
+            c.Position, c.Extent, c.Draggable
         ):
             camera = self.world.context.cameras[pos.space]
             drag_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)

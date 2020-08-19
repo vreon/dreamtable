@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Position, Extent, Hoverable
+from .. import components as c
 from ..utils import point_rect_intersect
 
 
@@ -10,7 +10,7 @@ class HoverController(esper.Processor):
         mouse_pos_x = self.world.context.mouse_pos_x
         mouse_pos_y = self.world.context.mouse_pos_y
         for _, (pos, ext, hov) in self.world.get_components(
-            Position, Extent, Hoverable
+            c.Position, c.Extent, c.Hoverable
         ):
             camera = self.world.context.cameras[pos.space]
             hover_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)

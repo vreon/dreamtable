@@ -1,15 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import (
-    Canvas,
-    Position,
-    Extent,
-    Image,
-    Hoverable,
-    Selectable,
-    CellGrid,
-)
+from .. import components as c
 from ..constants import Tool
 from ..utils import get_outline_rect
 
@@ -21,7 +13,7 @@ class CanvasRenderer(esper.Processor):
         theme = self.world.context.theme
 
         for ent, (canvas, pos, ext) in self.world.get_components(
-            Canvas, Position, Extent
+            c.Canvas, c.Position, c.Extent
         ):
             camera = self.world.context.cameras[pos.space]
 
@@ -29,7 +21,7 @@ class CanvasRenderer(esper.Processor):
 
             # draw texture if it has an image
             # it always should, but who knows.
-            for img in self.world.try_component(ent, Image):
+            for img in self.world.try_component(ent, c.Image):
                 if not img.texture:
                     continue
                 pyray.draw_texture(
@@ -37,10 +29,10 @@ class CanvasRenderer(esper.Processor):
                 )
 
             outline_color = theme.color_thingy_outline
-            for hov in self.world.try_component(ent, Hoverable):
+            for hov in self.world.try_component(ent, c.Hoverable):
                 if hov.hovered:
                     outline_color = theme.color_thingy_hovered_outline
-            for sel in self.world.try_component(ent, Selectable):
+            for sel in self.world.try_component(ent, c.Selectable):
                 if sel.selected:
                     outline_color = theme.color_thingy_selected_outline
 
@@ -76,8 +68,8 @@ class CanvasRenderer(esper.Processor):
             #             (255, 255, 255, 255),
             #         )
 
-            # Draw the CellGrid, if this Canvas has one
-            for cells in self.world.try_component(ent, CellGrid):
+            # Draw the c.CellGrid, if this c.Canvas has one
+            for cells in self.world.try_component(ent, c.CellGrid):
                 if (
                     self.world.context.tool != Tool.GRID
                     and not canvas.cell_grid_always_visible

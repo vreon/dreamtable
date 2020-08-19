@@ -2,7 +2,7 @@ from datetime import datetime
 from raylib.pyray import PyRay
 import esper
 
-from ..components import Canvas, Selectable, Image
+from .. import components as c
 
 
 class CanvasExportController(esper.Processor):
@@ -16,7 +16,9 @@ class CanvasExportController(esper.Processor):
         if not (is_control_down and pyray.is_key_pressed(pyray.KEY_S)):
             return
 
-        for _, (_, sel, img) in self.world.get_components(Canvas, Selectable, Image):
+        for _, (_, sel, img) in self.world.get_components(
+            c.Canvas, c.Selectable, c.Image
+        ):
             if not sel.selected:
                 continue
 

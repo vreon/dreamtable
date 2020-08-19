@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Canvas, Position, Extent, CellGrid
+from .. import components as c
 from ..constants import Tool
 
 
@@ -15,7 +15,7 @@ class GridToolRenderer(esper.Processor):
         theme = context.theme
 
         for ent, (canvas, pos, ext, cellgrid) in self.world.get_components(
-            Canvas, Position, Extent, CellGrid
+            c.Canvas, c.Position, c.Extent, c.CellGrid
         ):
             camera = context.cameras[pos.space]
 

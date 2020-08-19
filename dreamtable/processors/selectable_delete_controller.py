@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Selectable, Deletable
+from .. import components as c
 
 
 class SelectableDeleteController(esper.Processor):
@@ -9,6 +9,8 @@ class SelectableDeleteController(esper.Processor):
 
     def process(self, pyray: PyRay) -> None:
         if pyray.is_key_pressed(pyray.KEY_DELETE):
-            for ent, (sel, del_) in self.world.get_components(Selectable, Deletable):
+            for ent, (sel, del_) in self.world.get_components(
+                c.Selectable, c.Deletable
+            ):
                 if sel.selected:
                     del_.deleted = True

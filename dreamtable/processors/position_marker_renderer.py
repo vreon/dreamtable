@@ -1,6 +1,6 @@
 import esper
 from raylib.pyray import PyRay
-from ..components import Position, PositionMarker
+from .. import components as c
 
 
 class PositionMarkerRenderer(esper.Processor):
@@ -9,7 +9,7 @@ class PositionMarkerRenderer(esper.Processor):
     def process(self, pyray: PyRay) -> None:
         theme = self.world.context.theme
 
-        for _, (pos, mark) in self.world.get_components(Position, PositionMarker):
+        for _, (pos, mark) in self.world.get_components(c.Position, c.PositionMarker):
             camera = self.world.context.cameras[pos.space]
             pyray.begin_mode_2d(camera)
 

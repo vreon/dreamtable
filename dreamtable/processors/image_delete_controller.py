@@ -1,14 +1,14 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Image, Deletable
+from .. import components as c
 
 
 class ImageDeleteController(esper.Processor):
     """Unloads image (and texture) when the entity is deleted."""
 
     def process(self, pyray: PyRay) -> None:
-        for _, (img, del_) in self.world.get_components(Image, Deletable):
+        for _, (img, del_) in self.world.get_components(c.Image, c.Deletable):
             if not del_.deleted:
                 continue
 

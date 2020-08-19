@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Position, Extent, BoxSelection
+from .. import components as c
 from ..constants import SelectionType
 
 
@@ -12,7 +12,7 @@ class BoxSelectionRenderer(esper.Processor):
         theme = self.world.context.theme
 
         for _, (pos, ext, sel) in self.world.get_components(
-            Position, Extent, BoxSelection
+            c.Position, c.Extent, c.BoxSelection
         ):
             camera = self.world.context.cameras[pos.space]
 

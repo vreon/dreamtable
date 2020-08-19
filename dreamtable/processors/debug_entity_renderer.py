@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import DebugEntity, Position, Extent, Hoverable, Selectable, Name
+from .. import components as c
 from ..utils import get_outline_rect
 
 
@@ -12,7 +12,7 @@ class DebugEntityRenderer(esper.Processor):
         theme = self.world.context.theme
 
         for ent, (_, pos, ext) in self.world.get_components(
-            DebugEntity, Position, Extent
+            c.DebugEntity, c.Position, c.Extent
         ):
             camera = self.world.context.cameras[pos.space]
             pyray.begin_mode_2d(camera)
@@ -26,18 +26,18 @@ class DebugEntityRenderer(esper.Processor):
             outline_color = None
             outline_rect = pyray.Rectangle(*get_outline_rect(*rect_tuple))
 
-            for hov in self.world.try_component(ent, Hoverable):
+            for hov in self.world.try_component(ent, c.Hoverable):
                 if hov.hovered:
                     outline_color = theme.color_thingy_hovered_outline
 
-            for sel in self.world.try_component(ent, Selectable):
+            for sel in self.world.try_component(ent, c.Selectable):
                 if sel.selected:
                     outline_color = theme.color_selection_normal_outline
 
             if outline_color:
                 pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
 
-            for name in self.world.try_component(ent, Name):
+            for name in self.world.try_component(ent, c.Name):
                 font_size = 8
                 spacing = 1
                 measurement = pyray.measure_text_ex(

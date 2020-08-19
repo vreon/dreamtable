@@ -1,8 +1,8 @@
 import esper
 from raylib.pyray import PyRay
 
+from .. import components as c
 from ..constants import Tool
-from ..components import Canvas, Position, Extent, CellGrid
 from ..utils import point_rect_intersect
 
 
@@ -16,7 +16,7 @@ class GridToolController(esper.Processor):
         mouse_pos_y = context.mouse_pos_y
 
         for ent, (canvas, pos, ext, cellgrid) in self.world.get_components(
-            Canvas, Position, Extent, CellGrid
+            c.Canvas, c.Position, c.Extent, c.CellGrid
         ):
             camera = self.world.context.cameras[pos.space]
             rect_tuple = (pos.x, pos.y, ext.width, ext.height)

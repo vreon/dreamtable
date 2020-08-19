@@ -3,18 +3,7 @@ from raylib.pyray import PyRay
 from pathlib import Path
 import random
 
-from ..components import (
-    Name,
-    Position,
-    Extent,
-    Draggable,
-    Hoverable,
-    Selectable,
-    Deletable,
-    EggTimer,
-    Image,
-    SpriteRegion,
-)
+from .. import components as c
 from ..constants import Tool, PositionSpace
 
 
@@ -36,14 +25,14 @@ class EggToolController(esper.Processor):
             # todo lots of duplicate loading of images/textures
             # should share these somehow / unload them on exit!
             self.world.create_entity(
-                Name("Mystery egg"),
-                Position(click_pos.x - 8, click_pos.y - 12),
-                Extent(16, 16),
-                Draggable(),
-                Hoverable(),
-                Selectable(),
-                Deletable(),
-                EggTimer(time_left=random.randint(200, 500)),
-                Image(filename=str(pkg_path / "resources/sprites/16x16babies.png")),
-                SpriteRegion(88, 65),
+                c.Name("Mystery egg"),
+                c.Position(click_pos.x - 8, click_pos.y - 12),
+                c.Extent(16, 16),
+                c.Draggable(),
+                c.Hoverable(),
+                c.Selectable(),
+                c.Deletable(),
+                c.EggTimer(time_left=random.randint(200, 500)),
+                c.Image(filename=str(pkg_path / "resources/sprites/16x16babies.png")),
+                c.SpriteRegion(88, 65),
             )

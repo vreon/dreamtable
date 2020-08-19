@@ -2,19 +2,7 @@ import esper
 from raylib.pyray import PyRay
 from typing import Dict, List, Tuple
 
-from ..components import (
-    Hoverable,
-    Selectable,
-    Name,
-    Position,
-    Extent,
-    BoxSelection,
-    Canvas,
-    Image,
-    CellGrid,
-    Draggable,
-    Deletable,
-)
+from .. import components as c
 from ..constants import SelectionType, PositionSpace
 from ..utils import get_aabb, rect_rect_intersect
 
@@ -27,14 +15,14 @@ class BoxSelectionController(esper.Processor):
         mouse_pos_y = self.world.context.mouse_pos_y
         # Are we hovering over anything? If so, we can't create selections
         hovering_any = False
-        for ent, hover in self.world.get_component(Hoverable):
+        for ent, hover in self.world.get_component(c.Hoverable):
             if hover.hovered:
                 hovering_any = True
 
                 # If we just clicked, select only this.
                 # todo if we're holding shift, don't deselect other stuff
                 if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
-                    for sel_ent, sel in self.world.get_component(Selectable):
+                    for sel_ent, sel in self.world.get_component(c.Selectable):
                         sel.selected = ent == sel_ent
 
                 break
@@ -50,18 +38,18 @@ class BoxSelectionController(esper.Processor):
             if pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON):
                 self.world.context.mouse_reserved = True
                 self.world.create_entity(
-                    Name("Selection region"),
-                    Position(space=space),
-                    Extent(),
-                    BoxSelection(start_x=start_pos.x, start_y=start_pos.y),
+                    c.Name("Selection region"),
+                    c.Position(space=space),
+                    c.Extent(),
+                    c.BoxSelection(start_x=start_pos.x, start_y=start_pos.y),
                 )
             elif pyray.is_mouse_button_pressed(pyray.MOUSE_RIGHT_BUTTON):
                 self.world.context.mouse_reserved = True
                 self.world.create_entity(
-                    Name("Create thingy region"),
-                    Position(space=space),
-                    Extent(),
-                    BoxSelection(
+                    c.Name("Create thingy region"),
+                    c.Position(space=space),
+                    c.Extent(),
+                    c.BoxSelection(
                         type=SelectionType.CREATE,
                         start_x=start_pos.x,
                         start_y=start_pos.y,
@@ -70,20 +58,20 @@ class BoxSelectionController(esper.Processor):
 
         # Identify selectables
         selectables_by_space: Dict[
-            PositionSpace, List[Tuple[Selectable, Tuple[float, float, float, float]]]
+            PositionSpace, List[Tuple[c.Selectable, Tuple[float, float, float, float]]]
         ] = {
             PositionSpace.WORLD: [],
             PositionSpace.SCREEN: [],
         }
         for ent, (pos, ext, selectable) in self.world.get_components(
-            Position, Extent, Selectable
+            c.Position, c.Extent, c.Selectable
         ):
             rect = (pos.x, pos.y, ext.width, ext.height)
             selectables_by_space[pos.space].append((selectable, rect))
 
         # Update pos/ext, selectables, and handle release actions
         for ent, (pos, ext, selection) in self.world.get_components(
-            Position, Extent, BoxSelection
+            c.Position, c.Extent, c.BoxSelection
         ):
             camera = self.world.context.cameras[pos.space]
             end_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
@@ -133,22 +121,22 @@ class BoxSelectionController(esper.Processor):
             ):
                 self.world.context.mouse_reserved = False
                 self.world.create_entity(
-                    Name("Canvas"),
-                    Position(pos.x, pos.y),
-                    Extent(ext.width, ext.height),
-                    Canvas(),
-                    Image(
+                    c.Name("Canvas"),
+                    c.Position(pos.x, pos.y),
+                    c.Extent(ext.width, ext.height),
+                    c.Canvas(),
+                    c.Image(
                         image=pyray.gen_image_color(
                             int(ext.width),
                             int(ext.height),
                             self.world.context.color_secondary,
                         )
                     ),
-                    CellGrid(3, 3),
-                    Draggable(),
-                    Hoverable(),
-                    Selectable(),
-                    Deletable(),
+                    c.CellGrid(3, 3),
+                    c.Draggable(),
+                    c.Hoverable(),
+                    c.Selectable(),
+                    c.Deletable(),
                 )
                 self.world.delete_entity(ent)
                 continue

@@ -2,14 +2,14 @@ import esper
 from raylib.pyray import PyRay
 
 from ..utils import make_random_vector
-from ..components import Velocity, Wandering
+from .. import components as c
 
 
 class WanderingController(esper.Processor):
     """Kick objects around a bit."""
 
     def process(self, pyray: PyRay) -> None:
-        for _, (vel, jit) in self.world.get_components(Velocity, Wandering):
+        for _, (vel, jit) in self.world.get_components(c.Velocity, c.Wandering):
             jit.tick -= 1
             if jit.tick == 0:
                 jit.tick = jit.interval

@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import ToolSwitcher, Pressable, Button
+from .. import components as c
 from ..constants import Tool
 
 
@@ -22,7 +22,7 @@ class ToolSwitcherController(esper.Processor):
 
         # Update the current tool if we pressed a tool switcher
         for ent, (switcher, press) in self.world.get_components(
-            ToolSwitcher, Pressable
+            c.ToolSwitcher, c.Pressable
         ):
             if press.pressed:
                 context.tool = switcher.tool
@@ -48,5 +48,5 @@ class ToolSwitcherController(esper.Processor):
 
         # Update the lit state of any buttons that represent the currently
         # selected tool
-        for ent, (switcher, btn) in self.world.get_components(ToolSwitcher, Button):
+        for ent, (switcher, btn) in self.world.get_components(c.ToolSwitcher, c.Button):
             btn.lit = context.tool == switcher.tool

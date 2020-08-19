@@ -1,7 +1,7 @@
 import esper
 from raylib.pyray import PyRay
 
-from ..components import Deletable
+from .. import components as c
 
 
 class FinalDeleteController(esper.Processor):
@@ -12,6 +12,6 @@ class FinalDeleteController(esper.Processor):
     """
 
     def process(self, pyray: PyRay) -> None:
-        for ent, del_ in self.world.get_component(Deletable):
+        for ent, del_ in self.world.get_component(c.Deletable):
             if del_.deleted:
                 self.world.delete_entity(ent)

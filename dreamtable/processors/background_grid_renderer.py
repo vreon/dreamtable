@@ -2,7 +2,7 @@ import esper
 from raylib.pyray import PyRay
 
 from ..constants import PositionSpace
-from ..components import BackgroundGrid, Extent
+from .. import components as c
 
 
 class BackgroundGridRenderer(esper.Processor):
@@ -12,7 +12,7 @@ class BackgroundGridRenderer(esper.Processor):
         camera = self.world.context.cameras[PositionSpace.WORLD]
         screen_width = pyray.get_screen_width()
         screen_height = pyray.get_screen_height()
-        for _, (grid, ext) in self.world.get_components(BackgroundGrid, Extent):
+        for _, (grid, ext) in self.world.get_components(c.BackgroundGrid, c.Extent):
             step = ext.width * camera.zoom
             if step >= grid.min_step:
                 x = -camera.target.x * camera.zoom + screen_width / 2

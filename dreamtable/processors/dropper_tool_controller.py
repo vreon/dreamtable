@@ -2,7 +2,7 @@ import esper
 from raylib.pyray import PyRay
 
 from ..constants import Tool
-from ..components import Position, Extent, Canvas, Image
+from .. import components as c
 from ..utils import point_rect_intersect
 
 
@@ -22,7 +22,7 @@ class DropperToolController(esper.Processor):
         context.color_dropper = (0, 0, 0, 0)
 
         for _, (pos, ext, canvas, img) in self.world.get_components(
-            Position, Extent, Canvas, Image
+            c.Position, c.Extent, c.Canvas, c.Image
         ):
             camera = self.world.context.cameras[pos.space]
             rect_tuple = (pos.x, pos.y, ext.width, ext.height)
