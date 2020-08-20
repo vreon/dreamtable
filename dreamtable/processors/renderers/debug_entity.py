@@ -2,8 +2,8 @@ import esper
 from raylib.pyray import PyRay
 
 from dreamtable import components as c
-from dreamtable.utils import get_outline_rect
-from dreamtable.hal import HAL, Vector2D, Color
+from dreamtable.hal import HAL, Color
+from dreamtable.geom import Vec2, Rect
 
 
 class DebugEntityRenderer(esper.Processor):
@@ -18,25 +18,23 @@ class DebugEntityRenderer(esper.Processor):
             camera = self.world.context.cameras[pos.space]
             pyray.begin_mode_2d(camera)
 
-            rect_tuple = int(pos.x), int(pos.y), int(ext.width), int(ext.height)
-            rect = pyray.Rectangle(*rect_tuple)
-            color = theme.color_debug_magenta
+            rect = Rect(pos.x, pos.y, ext.width, ext.height).floored
+            color = Color(*theme.color_debug_magenta)
 
-            pyray.draw_rectangle_lines_ex(rect, 1, color)
+            hal.draw_rectangle_lines(rect, 1, color)
 
             outline_color = None
-            outline_rect = pyray.Rectangle(*get_outline_rect(*rect_tuple))
 
             for hov in self.world.try_component(ent, c.Hoverable):
                 if hov.hovered:
-                    outline_color = theme.color_thingy_hovered_outline
+                    outline_color = Color(*theme.color_thingy_hovered_outline)
 
             for sel in self.world.try_component(ent, c.Selectable):
                 if sel.selected:
-                    outline_color = theme.color_selection_normal_outline
+                    outline_color = Color(*theme.color_selection_normal_outline)
 
             if outline_color:
-                pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
+                hal.draw_rectangle_lines(rect.grown(1), 1, outline_color)
 
             for name in self.world.try_component(ent, c.Name):
                 font_size = 8
@@ -44,15 +42,10 @@ class DebugEntityRenderer(esper.Processor):
                 measurement = hal.measure_text(
                     theme.font, name.name, font_size, spacing
                 )
-                x = (pos.x + ext.width / 2) - measurement.x / 2
-                y = (pos.y + ext.height / 2) - measurement.y / 2
+                center = Vec2(pos.x + ext.width / 2, pos.y + ext.height / 2)
+                text_pos = (center - measurement / 2).floored
                 hal.draw_text(
-                    theme.font,
-                    name.name,
-                    Vector2D(int(x), int(y)),
-                    font_size,
-                    spacing,
-                    Color(*color),
+                    theme.font, name.name, text_pos, font_size, spacing, color,
                 )
 
             pyray.end_mode_2d()

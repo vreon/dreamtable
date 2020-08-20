@@ -1,8 +1,8 @@
-from dataclasses import dataclass, astuple
-from typing import Any, Tuple, cast
+from dataclasses import dataclass
+from typing import Any, Tuple
 
 import esper
-from vecrec import Vector as Vector2D, Rect  # noqa
+from dreamtable.geom import Vec2, Rect
 
 
 Font = Any
@@ -16,8 +16,9 @@ class Color:
     b: int = 0
     a: int = 0
 
-    def tuple(self) -> Tuple[int, int, int, int]:
-        return cast(Tuple[int, int, int, int], astuple(self))
+    @property
+    def rgba(self) -> Tuple[int, int, int, int]:
+        return self.r, self.g, self.b, self.a
 
 
 # todo: Camera should have a Transform2D instead of all this
@@ -25,8 +26,8 @@ class Color:
 
 @dataclass
 class Camera:
-    position: Vector2D
-    offset: Vector2D
+    position: Vec2
+    offset: Vec2
     rotation: float
     zoom: float
 
@@ -51,14 +52,17 @@ class HAL:
         self,
         font: Font,
         text: str,
-        position: Vector2D,
+        position: Vec2,
         size: float,
         spacing: float,
         color: Color,
     ) -> None:
         raise NotImplementedError
 
-    def measure_text(self, font: Font, text: str, size: int, spacing: int) -> Vector2D:
+    def draw_rectangle_lines(self, rect: Rect, thickness: int, color: Color) -> None:
+        raise NotImplementedError
+
+    def measure_text(self, font: Font, text: str, size: int, spacing: int) -> Vec2:
         raise NotImplementedError
 
     def main(self, world: esper.World) -> None:

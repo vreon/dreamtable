@@ -8,7 +8,8 @@ from typing import Any, Dict
 from esper import World
 from raylib.pyray import PyRay
 
-from .types import HAL, Color, Font, Image, Vector2D
+from dreamtable.hal.types import HAL, Color, Font, Image
+from dreamtable.geom import Vec2, Rect
 
 PACKAGE_PATH = Path(__file__).parents[1]
 
@@ -45,24 +46,26 @@ class PyRayHAL(HAL):
         self,
         font: Font,
         text: str,
-        position: Vector2D,
+        position: Vec2,
         size: float,
         spacing: float,
         color: Color,
     ) -> None:
         self.pyray.draw_text_ex(
-            self._fonts[font], text, position.tuple, size, spacing, color.tuple()
+            self._fonts[font], text, position.xy, size, spacing, color.rgba
         )
 
-    def measure_text(self, font: Font, text: str, size: int, spacing: int) -> Vector2D:
+    def draw_rectangle_lines(self, rect: Rect, thickness: int, color: Color) -> None:
+        self.pyray.draw_rectangle_lines_ex(rect.xywh, thickness, color.rgba)
+
+    def measure_text(self, font: Font, text: str, size: int, spacing: int) -> Vec2:
         m = self.pyray.measure_text_ex(self._fonts[font], text, size, spacing)
-        return Vector2D(m.x, m.y)
+        return Vec2(m.x, m.y)
 
     def main(self, world: World) -> None:
         while not self.pyray.window_should_close():
             self.pyray.begin_drawing()
-            self.pyray.clear_background(self._clear_color.tuple())
+            self.pyray.clear_background(self._clear_color.rgba)
             world.process(self.pyray, self)  # todo rm pyray
             self.pyray.end_drawing()
-
         self.pyray.close_window()
