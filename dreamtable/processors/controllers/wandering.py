@@ -13,6 +13,4 @@ class WanderingController(esper.Processor):
             jit.tick -= 1
             if jit.tick == 0:
                 jit.tick = jit.interval
-                vel.x, vel.y = Vec2.random().xy
-                vel.x *= jit.force
-                vel.y *= jit.force
+                vel.velocity.assign(Vec2.random() * jit.force)

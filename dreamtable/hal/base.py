@@ -67,6 +67,7 @@ class HAL:
     def set_clear_color(self, color: Color) -> None:
         raise NotImplementedError
 
+    # todo reorder these: text, position, font, color, size=8, spacing=1
     def draw_text(
         self,
         font: FontHandle,

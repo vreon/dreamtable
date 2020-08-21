@@ -1,23 +1,23 @@
 import random
 
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.hal import HAL
 
 
 class EggTimerController(esper.Processor):
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         for ent, egg in self.world.get_component(c.EggTimer):
             egg.time_left -= 1
 
             if egg.time_left <= 0:
                 # todo spawn an effect
                 self.world.remove_component(ent, c.EggTimer)
-                self.world.add_component(ent, c.Name("A tiny friend"))
-                self.world.add_component(ent, c.Velocity(friction=0.8))
-                self.world.add_component(
-                    ent, c.Wandering(force=random.random() * 3 + 1)
-                )
-                self.world.add_component(ent, c.TinyFriend(type=random.randint(0, 3)))
+                for component in [
+                    c.Name("A tiny friend"),
+                    c.Velocity(friction=0.8),
+                    c.Wandering(force=random.uniform(1, 4)),
+                    c.TinyFriend(type=random.randint(0, 3)),
+                ]:
+                    self.world.add_component(ent, component)

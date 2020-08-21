@@ -1,15 +1,18 @@
 import math
 
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import EPSILON
 from dreamtable.hal import HAL
 
 
+# todo lots of vector-y cleanup here
+# also the angle calculation is probably wrong
+# also also, maybe a helper for angle-to-direction
+# also also also, sprite_region needs to have a rect
 class TinyFriendController(esper.Processor):
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         for ent, (friend, vel, spr) in self.world.get_components(
             c.TinyFriend, c.Velocity, c.SpriteRegion
         ):
@@ -17,8 +20,10 @@ class TinyFriendController(esper.Processor):
             anim_cell_x = 0  # todo
             cell_x = base_cell_x + anim_cell_x
 
-            if abs(vel.x) > EPSILON and abs(vel.y) > EPSILON:
-                friend.angle = (math.atan2(vel.y, vel.x) + math.pi) / (2 * math.pi)
+            if vel.velocity.magnitude > EPSILON:
+                friend.angle = (
+                    math.atan2(vel.velocity.y, vel.velocity.x) + math.pi
+                ) / (2 * math.pi)
 
             # fmt: off
             cell_y = 1

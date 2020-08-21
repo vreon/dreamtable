@@ -61,6 +61,9 @@ class PyRayHAL(HAL):
     def set_clear_color(self, color: Color) -> None:
         self._clear_color = color
 
+    # todo: whoops, these aren't idempotent
+    # duplicate will clobber already-loaded resources
+    # if we share the resmap, how do we know when to free? reference counting?
     def load_font(self, resource_path: str) -> FontHandle:
         if not resource_path.startswith("res://"):
             raise ValueError("Invalid resource path")

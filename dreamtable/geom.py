@@ -196,7 +196,7 @@ class Vec2:
 
     def __bool__(self) -> bool:
         """Return true is the vector is not the zero vector."""
-        return self.x != 0 and self.y != 0
+        return not (self.x == 0 and self.y == 0)
 
     __nonzero__ = __bool__
 
