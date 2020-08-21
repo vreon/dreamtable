@@ -1,15 +1,14 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Key
 
 
 class SelectableDeleteController(esper.Processor):
     """Mark any selected Deletables as deleted when Delete is pressed."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
-        if pyray.is_key_pressed(pyray.KEY_DELETE):
+    def process(self, hal: HAL) -> None:
+        if hal.is_key_pressed(Key.DELETE):
             for ent, (sel, del_) in self.world.get_components(
                 c.Selectable, c.Deletable
             ):

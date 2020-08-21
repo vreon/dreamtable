@@ -13,9 +13,6 @@ class ImageController(esper.Processor):
                 img.image = hal.load_image(img.filename)
                 img.image_data = hal.get_image_data(img.image)
 
-                for (_, ext) in self.world.try_components(ent, c.Canvas, c.Extent):
-                    ext.extent.assign(hal.get_image_size(img.image))
-
             if not img.texture:
                 img.texture = hal.load_texture_from_image(img.image)
 

@@ -1,16 +1,15 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.utils import get_outline_rect
 from dreamtable.hal import HAL
+from dreamtable.geom import Vec2
 
 
 class CanvasRenderer(esper.Processor):
     """Draws Canvases and their images."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for ent, (canvas, pos, ext) in self.world.get_components(
@@ -18,16 +17,14 @@ class CanvasRenderer(esper.Processor):
         ):
             camera = self.world.context.cameras[pos.space]
 
-            pyray.begin_mode_2d(camera)
+            hal.push_camera(camera)
 
             # draw texture if it has an image
             # it always should, but who knows.
             for img in self.world.try_component(ent, c.Image):
                 if not img.texture:
                     continue
-                pyray.draw_texture(
-                    img.texture, int(pos.x), int(pos.y), (255, 255, 255, 255)
-                )
+                hal.draw_texture(img.texture, pos.position)
 
             outline_color = theme.color_thingy_outline
             for hov in self.world.try_component(ent, c.Hoverable):
@@ -37,9 +34,8 @@ class CanvasRenderer(esper.Processor):
                 if sel.selected:
                     outline_color = theme.color_thingy_selected_outline
 
-            rect_tuple = (int(pos.x), int(pos.y), int(ext.width), int(ext.height))
-            outline_rect = pyray.Rectangle(*get_outline_rect(*rect_tuple))
-            pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color.rgba)
+            outline_rect = c.rect(pos.position, ext.extent).grown(1)
+            hal.draw_rectangle_lines(outline_rect, 1, outline_color)
 
             # todo: draw ref'd cells
             # for cell_y, cell_ref_row in enumerate(self.cell_refs):
@@ -86,24 +82,20 @@ class CanvasRenderer(esper.Processor):
 
                 if cells.x > 1:
                     for ix in range(1, cells.x):
-                        x = pos.x + ix / cells.x * ext.width
-                        pyray.draw_line(
-                            int(x),
-                            int(pos.y),
-                            int(x),
-                            int(pos.y + ext.height),
+                        x = pos.position.x + ix / cells.x * ext.extent.x
+                        hal.draw_line(
+                            Vec2(x, pos.position.y),
+                            Vec2(x, pos.position.y + ext.extent.y),
                             cell_grid_color,
                         )
 
                 if cells.y > 1:
                     for iy in range(1, cells.y):
-                        y = pos.y + iy / cells.y * ext.height
-                        pyray.draw_line(
-                            int(pos.x),
-                            int(y),
-                            int(pos.x + ext.width),
-                            int(y),
+                        y = pos.position.y + iy / cells.y * ext.extent.y
+                        hal.draw_line(
+                            Vec2(pos.position.x, y),
+                            Vec2(pos.position.x + ext.extent.x, y),
                             cell_grid_color,
                         )
 
-            pyray.end_mode_2d()
+            hal.pop_camera()

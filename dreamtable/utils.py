@@ -25,19 +25,6 @@ def draw_line(
             y1 += sy
 
 
-def rect_rect_intersect(
-    x1: float,
-    y1: float,
-    w1: float,
-    h1: float,
-    x2: float,
-    y2: float,
-    w2: float,
-    h2: float,
-) -> bool:
-    return (x1 < x2 + w2) and (x1 + w1 > x2) and (y1 < y2 + h2) and (y1 + h1 > y2)
-
-
 def point_rect_intersect(
     x: float, y: float, rx: float, ry: float, rw: float, rh: float
 ) -> bool:

@@ -73,12 +73,13 @@ def run() -> None:
         c.Name("Sweetie 16"),
         c.Canvas(),
         c.Position(),
-        c.Extent(),
+        c.Extent(hal.get_image_size(img_sweetie)),
         c.Image(img_sweetie),
         c.Draggable(),
         c.Hoverable(),
         c.Selectable(),
         c.Deletable(),
+        # todo cellgrid
     )
 
     # debug: tool buttons
@@ -161,7 +162,7 @@ def run() -> None:
         # controllers
         # p.PencilToolController,
         # p.DropperToolController,
-        # p.GridToolController,
+        p.GridToolController,
         p.EggToolController,
         p.DragController,
         p.HoverController,
@@ -178,7 +179,7 @@ def run() -> None:
         # renderers (world)
         p.BackgroundGridRenderer,
         p.PositionMarkerRenderer,
-        # p.CanvasRenderer,
+        p.CanvasRenderer,
         p.SpriteRegionRenderer,
         p.DebugEntityRenderer,
         # renderers (ui)
@@ -188,7 +189,7 @@ def run() -> None:
         # p.PencilToolRenderer,
         # p.GridToolRenderer,
         # cleanup
-        # p.SelectableDeleteController,
+        p.SelectableDeleteController,
         p.ImageDeleteController,
         p.FinalDeleteController,
     ]:
