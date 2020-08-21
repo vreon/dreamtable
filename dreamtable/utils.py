@@ -1,6 +1,5 @@
 import math
-import random
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, Tuple
 
 
 # XXX: Something's wrong with pyray.image_draw_line
@@ -73,9 +72,3 @@ def get_outline_rect(
     x: float, y: float, w: float, h: float
 ) -> Tuple[float, float, float, float]:
     return (x - 1, y - 1, w + 2, h + 2)
-
-
-def make_random_vector(dims: int) -> List[float]:
-    vec = [random.gauss(0, 1) for i in range(dims)]
-    mag = sum(x ** 2 for x in vec) ** 0.5
-    return [x / mag for x in vec]

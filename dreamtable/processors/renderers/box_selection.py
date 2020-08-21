@@ -43,8 +43,8 @@ class BoxSelectionRenderer(esper.Processor):
             height = abs(y_max - y)
 
             rect = pyray.Rectangle(int(x), int(y), int(width), int(height))
-            pyray.draw_rectangle_rec(rect, fill_color)
-            pyray.draw_rectangle_lines_ex(rect, 1, outline_color)
+            pyray.draw_rectangle_rec(rect, fill_color.rgba)
+            pyray.draw_rectangle_lines_ex(rect, 1, outline_color.rgba)
 
             if labeled:
                 text_pos = pyray.Vector2(int(x), int(y) - 8)
@@ -54,7 +54,7 @@ class BoxSelectionRenderer(esper.Processor):
                     text_pos,
                     8,
                     1,
-                    theme.color_text_normal,
+                    theme.color_text_normal.rgba,
                 )
 
             pyray.end_mode_2d()

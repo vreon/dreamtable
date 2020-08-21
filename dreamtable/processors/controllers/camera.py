@@ -1,28 +1,23 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import EPSILON
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Key, MouseButton
 
 
 class CameraController(esper.Processor):
     """Update cameras in response to events."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
-        screen_width = pyray.get_screen_width()
-        screen_height = pyray.get_screen_height()
-
+    def process(self, hal: HAL) -> None:
+        screen_size = hal.get_screen_size()
         context = self.world.context
-        mouse_delta_x = context.mouse_delta_x
-        mouse_delta_y = context.mouse_delta_y
+        mouse_delta = context.mouse_delta
 
         for _, cam in self.world.get_component(c.Camera):
             if cam.active:
                 # pan
-                if pyray.is_mouse_button_down(pyray.MOUSE_MIDDLE_BUTTON):
-                    cam.camera_2d.target.x -= mouse_delta_x / cam.camera_2d.zoom
-                    cam.camera_2d.target.y -= mouse_delta_y / cam.camera_2d.zoom
+                if hal.is_mouse_button_down(MouseButton.MIDDLE):
+                    cam.camera.target -= mouse_delta / cam.camera.zoom
 
                 # smooth zoom
                 if context.mouse_wheel:
@@ -30,21 +25,20 @@ class CameraController(esper.Processor):
                     context.mouse_wheel = 0
 
                 # global hotkeys
-                if pyray.is_key_pressed(pyray.KEY_HOME):
-                    cam.camera_2d.target = (0, 0)
-                if pyray.is_key_pressed(pyray.KEY_ONE):
-                    cam.camera_2d.zoom = 1
-                if pyray.is_key_pressed(pyray.KEY_TWO):
-                    cam.camera_2d.zoom = 2
-                if pyray.is_key_pressed(pyray.KEY_THREE):
-                    cam.camera_2d.zoom = 3
-                if pyray.is_key_pressed(pyray.KEY_FOUR):
-                    cam.camera_2d.zoom = 4
+                if hal.is_key_pressed(Key.HOME):
+                    cam.camera.target.zero()
+                if hal.is_key_pressed(Key.ONE):
+                    cam.camera.zoom = 1
+                if hal.is_key_pressed(Key.TWO):
+                    cam.camera.zoom = 2
+                if hal.is_key_pressed(Key.THREE):
+                    cam.camera.zoom = 3
+                if hal.is_key_pressed(Key.FOUR):
+                    cam.camera.zoom = 4
 
-            cam.camera_2d.offset.x = screen_width / 2
-            cam.camera_2d.offset.y = screen_height / 2
+            cam.camera.offset = screen_size / 2
+            cam.camera.zoom += cam.zoom_velocity * cam.camera.zoom
 
-            cam.camera_2d.zoom += cam.zoom_velocity * cam.camera_2d.zoom
             cam.zoom_velocity *= cam.zoom_friction
             if abs(cam.zoom_velocity) < EPSILON:
                 cam.zoom_velocity = 0

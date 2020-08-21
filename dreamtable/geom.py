@@ -152,6 +152,9 @@ class Vec2:
         projection = self.projection(axis)
         self.assign(projection)
 
+    def zero(self) -> None:
+        self.x = self.y = 0
+
     def dot_product(self, other: Vec2) -> float:
         """Return the dot product of the given vectors."""
         return self.x * other.x + self.y * other.y
@@ -424,14 +427,14 @@ class Rect:
     #         self.displace(-vector)
     #         return self
 
-    #     def __contains__(self, other):
-    #         return self.contains(other)
+    def __contains__(self, other: Union[Vec2, Rect]) -> bool:
+        return self.contains(other)
 
-    #     @staticmethod
-    #     def from_size(width, height):
-    #         """Create a rectangle with the given width and height.  The bottom-left
-    #         corner will be on the origin."""
-    #         return Rect(0, 0, width, height)
+    @staticmethod
+    def from_size(width: float, height: float) -> Rect:
+        """Create a rectangle with the given width and height.  The bottom-left
+        corner will be on the origin."""
+        return Rect(0, 0, width, height)
 
     #     @staticmethod
     #     def from_width(width, ratio=1 / PHI):
@@ -491,12 +494,11 @@ class Rect:
     #         position = cast_anything_to_vector(position) - (width / 2, height / 2)
     #         return Rect(position.x, position.y, width, height)
 
-    #     @staticmethod
-    #     def from_vector(position):
-    #         """Create a rectangle from a vector.  The rectangle will have no area,
-    #         and its bottom-let corner will be the same as the vector."""
-    #         position = cast_anything_to_vector(position)
-    #         return Rect(position.x, position.y, 0, 0)
+    @staticmethod
+    def from_top_left(position: Vec2) -> Rect:
+        """Create a rectangle from a vector.  The rectangle will have no area,
+        and its top left corner will be the same as the vector."""
+        return Rect(position.x, position.y, 0, 0)
 
     #     @staticmethod
     #     def from_points(*points):
@@ -614,15 +616,19 @@ class Rect:
 
     #         return True
 
-    #     @accept_anything_as_rectangle
-    #     def contains(self, other):
-    #         """Return true if the given shape is inside this rectangle."""
-    #         return (
-    #             self.left <= other.left
-    #             and self.right >= other.right
-    #             and self.top >= other.top
-    #             and self.bottom <= other.bottom
-    #         )
+    def contains(self, other: Union[Vec2, Rect]) -> bool:
+        """Return true if the other Vec2 or Rect is inside this rectangle."""
+        if isinstance(other, Vec2):
+            return (self.x <= other.x < self.right) and (
+                self.y <= other.y < self.bottom
+            )
+        else:
+            return (
+                self.x <= other.x
+                and self.right >= other.right
+                and self.y >= other.y
+                and self.bottom <= other.bottom
+            )
 
     #     @accept_anything_as_rectangle
     #     def align_left(self, target):
@@ -668,14 +674,16 @@ class Rect:
     #     def set_left(self, x):
     #         self._left = x
 
-    #     def get_center_x(self):
-    #         return self._left + self._width / 2
+    @property
+    def center_x(self) -> float:
+        return self.x + self.width / 2
 
     #     def set_center_x(self, x):
     #         self._left = x - self._width / 2
 
-    #     def get_right(self):
-    #         return self._left + self._width
+    @property
+    def right(self) -> float:
+        return self.x + self.width
 
     #     def set_right(self, x):
     #         self._left = x - self._width
@@ -686,14 +694,16 @@ class Rect:
     #     def set_top(self, y):
     #         self._bottom = y - self._height
 
-    #     def get_center_y(self):
-    #         return self._bottom + self._height / 2
+    @property
+    def center_y(self) -> float:
+        return self.y + self.height / 2
 
     #     def set_center_y(self, y):
     #         self._bottom = y - self._height / 2
 
-    #     def get_bottom(self):
-    #         return self._bottom
+    @property
+    def bottom(self) -> float:
+        return self.y + self.height
 
     #     def set_bottom(self, y):
     #         self._bottom = y
@@ -759,8 +769,9 @@ class Rect:
     #         self.center_y = point[1]
     #         self.left = point[0]
 
-    #     def get_center(self):
-    #         return Vec2(self.center_x, self.center_y)
+    @property
+    def center(self) -> Vec2:
+        return Vec2(self.center_x, self.center_y)
 
     #     @accept_anything_as_vector
     #     def set_center(self, point):
@@ -808,8 +819,9 @@ class Rect:
     #         self.bottom_right = vertices[2]
     #         self.bottom_left = vertices[3]
 
-    #     def get_size(self):
-    #         return Vec2(self._width, self._height)
+    @property
+    def size(self) -> Vec2:
+        return Vec2(self.width, self.height)
 
     #     def set_size(self, width, height):
     #         self._width = width

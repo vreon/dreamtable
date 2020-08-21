@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional, Tuple
+from typing import Mapping, Iterable, Optional
+from typing_extensions import Protocol
 
-from .constants import PositionSpace, SelectionType, Tool
-
-Color = Tuple[int, int, int, int]
+from dreamtable.constants import PositionSpace, SelectionType, Tool
+from dreamtable.geom import Vec2, Rect
+from dreamtable.hal import (
+    Camera as HALCamera,
+    Color,
+    FontHandle,
+    ImageHandle,
+    TextureHandle,
+)
 
 
 ################################################################################
@@ -26,20 +33,18 @@ class WorldContext:
     # combo is released.
     underlying_tool: Optional[Tool] = None
 
-    color_primary: Color = (255, 255, 255, 255)
-    color_secondary: Color = (0, 0, 0, 255)
-    color_dropper: Color = (0, 0, 0, 0)
+    color_primary: Color = Color(255, 255, 255, 255)
+    color_secondary: Color = Color(0, 0, 0, 255)
+    color_dropper: Color = Color(0, 0, 0, 0)
 
     # Just active cameras; kept in sync by a processor
-    cameras: Mapping[PositionSpace, Any] = field(default_factory=dict)
+    cameras: Mapping[PositionSpace, HALCamera] = field(default_factory=dict)
 
     snap_x: int = 8
     snap_y: int = 8
 
-    mouse_pos_x: Optional[int] = None
-    mouse_pos_y: Optional[int] = None
-    mouse_delta_x: int = 0
-    mouse_delta_y: int = 0
+    mouse_pos: Vec2 = field(default_factory=Vec2)
+    mouse_delta: Vec2 = field(default_factory=Vec2)
     mouse_wheel: int = 0
 
     # todo this is janky af
@@ -49,28 +54,41 @@ class WorldContext:
 
 @dataclass
 class Theme:
-    color_background: Color = (9, 12, 17, 255)
-    color_position_marker: Color = (164, 84, 30, 255)
-    color_grid_cells_subtle: Color = (255, 255, 255, 32)
-    color_grid_cells_obvious: Color = (255, 255, 255, 64)
-    color_grid_minor: Color = (68, 93, 144, 16)
-    color_grid_major: Color = (68, 93, 144, 32)
-    color_text_normal: Color = (255, 255, 255, 255)
-    color_text_error: Color = (164, 84, 30, 255)
-    color_selection_create_outline: Color = (0, 255, 0, 128)
-    color_selection_create_fill: Color = (0, 255, 0, 32)
-    color_selection_normal_outline: Color = (68, 93, 144, 128)
-    color_selection_normal_fill: Color = (68, 93, 144, 32)
-    color_thingy_outline: Color = (68, 93, 144, 16)
-    color_thingy_hovered_outline: Color = (68, 93, 144, 48)
-    color_thingy_selected_outline: Color = (68, 93, 144, 128)
-    color_debug_magenta: Color = (255, 0, 255, 255)
-    color_button_fill: Color = (32, 32, 32, 255)
-    color_button_border: Color = (64, 64, 64, 255)
-    color_button_lit_fill: Color = (84, 30, 0, 255)
-    color_button_lit_border: Color = (164, 84, 30, 255)
-    color_button_hover_overlay: Color = (255, 255, 255, 32)
-    font: Any = None  # TODO
+    font: FontHandle
+    color_background: Color = Color(9, 12, 17, 255)
+    color_position_marker: Color = Color(164, 84, 30, 255)
+    color_grid_cells_subtle: Color = Color(255, 255, 255, 32)
+    color_grid_cells_obvious: Color = Color(255, 255, 255, 64)
+    color_grid_minor: Color = Color(68, 93, 144, 16)
+    color_grid_major: Color = Color(68, 93, 144, 32)
+    color_text_normal: Color = Color(255, 255, 255, 255)
+    color_text_error: Color = Color(164, 84, 30, 255)
+    color_selection_create_outline: Color = Color(0, 255, 0, 128)
+    color_selection_create_fill: Color = Color(0, 255, 0, 32)
+    color_selection_normal_outline: Color = Color(68, 93, 144, 128)
+    color_selection_normal_fill: Color = Color(68, 93, 144, 32)
+    color_thingy_outline: Color = Color(68, 93, 144, 16)
+    color_thingy_hovered_outline: Color = Color(68, 93, 144, 48)
+    color_thingy_selected_outline: Color = Color(68, 93, 144, 128)
+    color_debug_magenta: Color = Color(255, 0, 255, 255)
+    color_button_fill: Color = Color(32, 32, 32, 255)
+    color_button_border: Color = Color(64, 64, 64, 255)
+    color_button_lit_fill: Color = Color(84, 30, 0, 255)
+    color_button_lit_border: Color = Color(164, 84, 30, 255)
+    color_button_hover_overlay: Color = Color(255, 255, 255, 32)
+
+
+################################################################################
+# Components
+
+
+class XY(Protocol):
+    x: float
+    y: float
+
+
+def rect(xy: XY, wh: XY) -> Rect:
+    return Rect(xy.x, xy.y, wh.x, wh.y)
 
 
 ################################################################################
@@ -79,21 +97,18 @@ class Theme:
 
 @dataclass
 class Position:
-    x: float = 0.0
-    y: float = 0.0
+    position: Vec2 = field(default_factory=Vec2)
     space: PositionSpace = PositionSpace.WORLD
 
 
 @dataclass
 class Extent:
-    width: float = 0.0
-    height: float = 0.0
+    extent: Vec2 = field(default_factory=Vec2)
 
 
 @dataclass
 class Velocity:
-    x: float = 0
-    y: float = 0
+    velocity: Vec2 = field(default_factory=Vec2)
     friction: float = 1.0
 
 
@@ -129,7 +144,7 @@ class BackgroundGrid:
 
 @dataclass
 class Camera:
-    camera_2d: Any = None
+    camera: HALCamera
     active: bool = False
     zoom_speed: float = 0.025
     zoom_velocity: float = 0
@@ -161,8 +176,7 @@ class Deletable:
 @dataclass
 class Draggable:
     dragging: bool = False
-    offset_x: float = 0.0
-    offset_y: float = 0.0
+    offset: Optional[Vec2] = None
 
 
 @dataclass
@@ -183,16 +197,15 @@ class ToolSwitcher:
 
 @dataclass
 class Canvas:
-    color: Color = (0, 0, 0, 255)
+    color: Color = Color(0, 0, 0, 255)
     cell_grid_always_visible: bool = False
 
 
 @dataclass
 class Image:
-    image: Any = None
-    texture: Any = None
-    image_data: Any = None
-    filename: Optional[str] = None
+    image: ImageHandle
+    data: Optional[Iterable[Color]] = None
+    texture: Optional[TextureHandle] = None
     dirty: bool = False
 
 
@@ -200,7 +213,7 @@ class Image:
 class SpriteRegion:
     x: int = 0
     y: int = 0
-    tint: Color = (255, 255, 255, 255)
+    # todo width height
 
 
 @dataclass

@@ -1,40 +1,39 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable.constants import PositionSpace
 from dreamtable import components as c
 from dreamtable.hal import HAL
+from dreamtable.geom import Vec2
 
 
 class BackgroundGridRenderer(esper.Processor):
     """Draws BackgroundGrids."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         camera = self.world.context.cameras[PositionSpace.WORLD]
-        screen_width = pyray.get_screen_width()
-        screen_height = pyray.get_screen_height()
+        screen = hal.get_screen_rect()
         for _, (grid, ext) in self.world.get_components(c.BackgroundGrid, c.Extent):
-            step = ext.width * camera.zoom
+            step = ext.extent.x * camera.zoom
             if step >= grid.min_step:
-                x = -camera.target.x * camera.zoom + screen_width / 2
+                x = -camera.target.x * camera.zoom + screen.width / 2
                 x %= step
-                while x < screen_width:
-                    pyray.draw_line_ex(
-                        (int(x), 0),
-                        (int(x), int(screen_height)),
+                while x < screen.width:
+                    hal.draw_line_width(
+                        Vec2(x, 0).floored,
+                        Vec2(x, screen.height).floored,
                         grid.line_width,
                         grid.color,
                     )
                     x += step
 
-            step = ext.height * camera.zoom
+            step = ext.extent.y * camera.zoom
             if step >= grid.min_step:
-                y = -camera.target.y * camera.zoom + screen_height / 2
+                y = -camera.target.y * camera.zoom + screen.height / 2
                 y %= step
-                while y < screen_height:
-                    pyray.draw_line_ex(
-                        (0, int(y)),
-                        (int(screen_width), int(y)),
+                while y < screen.height:
+                    hal.draw_line_width(
+                        Vec2(0, y).floored,
+                        Vec2(screen.width, y).floored,
                         grid.line_width,
                         grid.color,
                     )

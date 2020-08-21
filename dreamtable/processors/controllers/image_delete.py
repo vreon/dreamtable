@@ -1,5 +1,4 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.hal import HAL
@@ -8,7 +7,7 @@ from dreamtable.hal import HAL
 class ImageDeleteController(esper.Processor):
     """Unloads image (and texture) when the entity is deleted."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         for _, (img, del_) in self.world.get_components(c.Image, c.Deletable):
             if not del_.deleted:
                 continue
@@ -16,9 +15,9 @@ class ImageDeleteController(esper.Processor):
             img.image_data = None
 
             if img.texture:
-                pyray.unload_texture(img.texture)
+                hal.unload_texture(img.texture)
                 img.texture = None
 
             if img.image:
-                pyray.unload_image(img.image)
+                hal.unload_image(img.image)
                 img.image = None

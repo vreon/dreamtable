@@ -39,7 +39,7 @@ class CanvasRenderer(esper.Processor):
 
             rect_tuple = (int(pos.x), int(pos.y), int(ext.width), int(ext.height))
             outline_rect = pyray.Rectangle(*get_outline_rect(*rect_tuple))
-            pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color)
+            pyray.draw_rectangle_lines_ex(outline_rect, 1, outline_color.rgba)
 
             # todo: draw ref'd cells
             # for cell_y, cell_ref_row in enumerate(self.cell_refs):

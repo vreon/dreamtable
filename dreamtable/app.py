@@ -1,61 +1,67 @@
-from pathlib import Path
-
 import esper
 
-from . import components as c
-from . import processors as p
-from .constants import PositionSpace, Tool
-from .hal.pyray import PyRayHAL
-
-pkg_path = Path(__file__).parent
+from dreamtable import components as c
+from dreamtable import processors as p
+from dreamtable.constants import PositionSpace, Tool
+from dreamtable.hal import Camera
+from dreamtable.hal.pyray import PyRayHAL
+from dreamtable.geom import Vec2
 
 
 def run() -> None:
     hal = PyRayHAL()
     hal.init_window(800, 600, "Dream Table")
 
-    hal.load_font("res://fonts/alpha_beta.png")
+    font = hal.load_font("res://fonts/alpha_beta.png")
 
-    for resource_path in [
-        "res://palettes/sweetie-16-8x.png",
-        "res://icons/hand.png",
-        "res://icons/pencil.png",
-        "res://icons/dropper.png",
-        "res://icons/grid.png",
-        "res://icons/cellref.png",
-        "res://icons/cellref_dropper.png",
-        "res://icons/egg.png",
-    ]:
-        hal.load_image(resource_path)
+    img_sweetie = hal.load_image("res://palettes/sweetie-16-8x.png")
+    img_hand = hal.load_image("res://icons/hand.png")
+    img_pencil = hal.load_image("res://icons/pencil.png")
+    img_dropper = hal.load_image("res://icons/dropper.png")
+    img_grid = hal.load_image("res://icons/grid.png")
+    img_cellref = hal.load_image("res://icons/cellref.png")
+    img_cellref_dropper = hal.load_image("res://icons/cellref_dropper.png")
+    img_egg = hal.load_image("res://icons/egg.png")
 
     world = esper.World()
     world.context = c.WorldContext(
-        cameras={PositionSpace.SCREEN: hal.pyray.Camera2D((0, 0), (0, 0), 0, 3)},
-        theme=c.Theme(font="res://fonts/alpha_beta.png"),
+        cameras={PositionSpace.SCREEN: Camera(zoom=3)}, theme=c.Theme(font=font),
     )
 
     # Spawn initial entities
     world.create_entity(
-        c.Name("Camera"),
-        c.Camera(active=True, camera_2d=hal.pyray.Camera2D((0, 0), (0, 0), 0, 4)),
+        c.Name("Camera"), c.Camera(active=True, camera=Camera(zoom=4)),
     )
-    world.create_entity(c.Name("Origin"), c.Position(), c.PositionMarker())
+    world.create_entity(
+        c.Name("Origin"), c.Position(), c.PositionMarker(),
+    )
     world.create_entity(
         c.Name("Minor grid"),
         c.BackgroundGrid(world.context.theme.color_grid_minor),
-        c.Extent(8, 8),
+        c.Extent(Vec2(8, 8)),
     )
     world.create_entity(
         c.Name("Major grid"),
         c.BackgroundGrid(world.context.theme.color_grid_major),
-        c.Extent(32, 32),
+        c.Extent(Vec2(32, 32)),
     )
 
-    # debug: a draggable to drag around
+    # debug: a draggable to drag around (screen space)
     world.create_entity(
         c.Name("Draggable"),
-        c.Position(214, 2, space=PositionSpace.SCREEN),
-        c.Extent(50, 12),
+        c.Position(Vec2(214, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(50, 12)),
+        c.DebugEntity(),
+        c.Hoverable(),
+        c.Draggable(),
+        c.Selectable(),
+    )
+
+    # debug: a draggable to drag around (world space)
+    world.create_entity(
+        c.Name("Draggable"),
+        c.Position(Vec2(20, 20)),
+        c.Extent(Vec2(50, 12)),
         c.DebugEntity(),
         c.Hoverable(),
         c.Draggable(),
@@ -68,7 +74,7 @@ def run() -> None:
         c.Canvas(),
         c.Position(),
         c.Extent(),
-        c.Image(filename="res://palettes/sweetie-16-8x.png"),
+        c.Image(img_sweetie),
         c.Draggable(),
         c.Hoverable(),
         c.Selectable(),
@@ -81,9 +87,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.MOVE),
         c.Pressable(),
-        c.Position(2 + 8 * 0, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://icons/hand.png"),
+        c.Position(Vec2(2 + 8 * 0, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_hand),
         c.Hoverable(),
     )
     world.create_entity(
@@ -91,9 +97,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.PENCIL),
         c.Pressable(),
-        c.Position(2 + 8 * 1, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://resources/icons/pencil.png"),
+        c.Position(Vec2(2 + 8 * 1, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_pencil),
         c.Hoverable(),
     )
     world.create_entity(
@@ -101,9 +107,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.DROPPER),
         c.Pressable(),
-        c.Position(2 + 8 * 2, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://icons/dropper.png"),
+        c.Position(Vec2(2 + 8 * 2, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_dropper),
         c.Hoverable(),
     )
     world.create_entity(
@@ -111,9 +117,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.GRID),
         c.Pressable(),
-        c.Position(2 + 8 * 3, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://icons/grid.png"),
+        c.Position(Vec2(2 + 8 * 3, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_grid),
         c.Hoverable(),
     )
     world.create_entity(
@@ -121,9 +127,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.CELLREF),
         c.Pressable(),
-        c.Position(2 + 8 * 4, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://icons/cellref.png"),
+        c.Position(Vec2(2 + 8 * 4, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_cellref),
         c.Hoverable(),
     )
     world.create_entity(
@@ -131,9 +137,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.CELLREF_DROPPER),
         c.Pressable(),
-        c.Position(2 + 8 * 5, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://icons/cellref_dropper.png"),
+        c.Position(Vec2(2 + 8 * 5, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_cellref_dropper),
         c.Hoverable(),
     )
     world.create_entity(
@@ -141,9 +147,9 @@ def run() -> None:
         c.Button(),
         c.ToolSwitcher(Tool.EGG),
         c.Pressable(),
-        c.Position(2 + 8 * 6, 2, space=PositionSpace.SCREEN),
-        c.Extent(8, 8),
-        c.Image(filename="res://icons/egg.png"),
+        c.Position(Vec2(2 + 8 * 6, 2), space=PositionSpace.SCREEN),
+        c.Extent(Vec2(8, 8)),
+        c.Image(img_egg),
         c.Hoverable(),
     )
 
@@ -153,36 +159,36 @@ def run() -> None:
         p.CameraContextController(),
         p.MouseController(),
         # controllers
-        p.PencilToolController(),
-        p.DropperToolController(),
-        p.GridToolController(),
-        p.EggToolController(),
+        # p.PencilToolController(),
+        # p.DropperToolController(),
+        # p.GridToolController(),
+        # p.EggToolController(),
         p.DragController(),
         p.HoverController(),
-        p.PressController(),
-        p.BoxSelectionController(),
+        # p.PressController(),
+        # p.BoxSelectionController(),
         p.ImageController(),
-        p.ToolSwitcherController(hal.pyray),
-        p.CanvasExportController(),
+        # p.ToolSwitcherController(hal.pyray),
+        # p.CanvasExportController(),
         p.CameraController(),
         p.MotionController(),
-        p.WanderingController(),
-        p.EggTimerController(),
-        p.TinyFriendController(),
+        # p.WanderingController(),
+        # p.EggTimerController(),
+        # p.TinyFriendController(),
         # renderers (world)
         p.BackgroundGridRenderer(),
         p.PositionMarkerRenderer(),
-        p.CanvasRenderer(),
+        # p.CanvasRenderer(),
         p.SpriteRegionRenderer(),
         p.DebugEntityRenderer(),
         # renderers (ui)
-        p.BoxSelectionRenderer(),
+        # p.BoxSelectionRenderer(),
         p.ButtonRenderer(),
-        p.DropperToolRenderer(),
-        p.PencilToolRenderer(),
-        p.GridToolRenderer(),
+        # p.DropperToolRenderer(),
+        # p.PencilToolRenderer(),
+        # p.GridToolRenderer(),
         # cleanup
-        p.SelectableDeleteController(),
+        # p.SelectableDeleteController(),
         p.ImageDeleteController(),
         p.FinalDeleteController(),
     ]:

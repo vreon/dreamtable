@@ -1,44 +1,38 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.utils import point_rect_intersect
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, MouseButton
 
 
 class DragController(esper.Processor):
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         if not self.world.context.tool == Tool.MOVE:
             return
 
-        mouse_pos_x = self.world.context.mouse_pos_x
-        mouse_pos_y = self.world.context.mouse_pos_y
+        mouse_pos = self.world.context.mouse_pos
 
         for _, (pos, ext, drag) in self.world.get_components(
             c.Position, c.Extent, c.Draggable
         ):
             camera = self.world.context.cameras[pos.space]
-            drag_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
-            rect_tuple = (pos.x, pos.y, ext.width, ext.height)
+            drag_pos = hal.get_screen_to_world(mouse_pos, camera)
+            rect = c.rect(pos.position, ext.extent)
             if (
                 not self.world.context.mouse_reserved
-                and pyray.is_mouse_button_pressed(pyray.MOUSE_LEFT_BUTTON)
-                and point_rect_intersect(drag_pos.x, drag_pos.y, *rect_tuple)
+                and hal.is_mouse_button_pressed(MouseButton.LEFT)
+                and drag_pos in rect
             ):
                 self.world.context.mouse_reserved = True
                 drag.dragging = True
-                drag.offset_x = drag_pos.x - pos.x
-                drag.offset_y = drag_pos.y - pos.y
+                drag.offset = drag_pos - pos.position
 
             if drag.dragging:
-                pos.x = drag_pos.x - drag.offset_x
-                pos.y = drag_pos.y - drag.offset_y
+                pos.position.assign((drag_pos - drag.offset).floored)
 
                 # todo snap to grid
 
-            if pyray.is_mouse_button_released(pyray.MOUSE_LEFT_BUTTON):
+            if hal.is_mouse_button_released(MouseButton.LEFT):
                 self.world.context.mouse_reserved = False
                 drag.dragging = False
-                drag.offset_x = 0
-                drag.offset_y = 0
+                drag.offset = None

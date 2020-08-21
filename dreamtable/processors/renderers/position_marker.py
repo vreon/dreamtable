@@ -1,29 +1,29 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.hal import HAL
+from dreamtable.geom import Vec2
 
 
 class PositionMarkerRenderer(esper.Processor):
     """Draws PositionMarkers."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for _, (pos, mark) in self.world.get_components(c.Position, c.PositionMarker):
             camera = self.world.context.cameras[pos.space]
-            pyray.begin_mode_2d(camera)
+            hal.push_camera(camera)
 
-            pyray.draw_line_v(
-                (int(pos.x - mark.size), int(pos.y)),
-                (int(pos.x + mark.size), int(pos.y)),
+            hal.draw_line(
+                Vec2(pos.position.x - mark.size, pos.position.y).floored,
+                Vec2(pos.position.x + mark.size, pos.position.y).floored,
                 theme.color_position_marker,
             )
-            pyray.draw_line_v(
-                (int(pos.x), int(pos.y - mark.size)),
-                (int(pos.x), int(pos.y + mark.size)),
+            hal.draw_line(
+                Vec2(pos.position.x, pos.position.y - mark.size).floored,
+                Vec2(pos.position.x, pos.position.y + mark.size).floored,
                 theme.color_position_marker,
             )
 
-            pyray.end_mode_2d()
+            hal.pop_camera()

@@ -1,20 +1,14 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
-from dreamtable.utils import point_rect_intersect
 from dreamtable.hal import HAL
 
 
 class HoverController(esper.Processor):
-    def process(self, pyray: PyRay, hal: HAL) -> None:
-        mouse_pos_x = self.world.context.mouse_pos_x
-        mouse_pos_y = self.world.context.mouse_pos_y
+    def process(self, hal: HAL) -> None:
         for _, (pos, ext, hov) in self.world.get_components(
             c.Position, c.Extent, c.Hoverable
         ):
             camera = self.world.context.cameras[pos.space]
-            hover_pos = pyray.get_screen_to_world_2d((mouse_pos_x, mouse_pos_y), camera)
-            hov.hovered = point_rect_intersect(
-                hover_pos.x, hover_pos.y, pos.x, pos.y, ext.width, ext.height
-            )
+            hover_pos = hal.get_screen_to_world(self.world.context.mouse_pos, camera)
+            hov.hovered = hover_pos in c.rect(pos.position, ext.extent)
