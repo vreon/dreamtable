@@ -38,6 +38,9 @@ class HAL:
     ) -> None:
         raise NotImplementedError
 
+    def gen_image_from_color(self, size: Vec2, color: Color) -> ImageHandle:
+        raise NotImplementedError
+
     def get_image_size(self, image_handle: ImageHandle) -> Vec2:
         raise NotImplementedError
 
@@ -126,6 +129,9 @@ class HAL:
     def is_key_pressed(self, key: Key) -> bool:
         raise NotImplementedError
 
+    def is_key_down(self, key: Key) -> bool:
+        raise NotImplementedError
+
     def is_mouse_button_down(self, mouse_button: MouseButton) -> bool:
         raise NotImplementedError
 
@@ -135,5 +141,5 @@ class HAL:
     def is_mouse_button_released(self, mouse_button: MouseButton) -> bool:
         raise NotImplementedError
 
-    def main(self, world: esper.World) -> None:
+    def run(self, world: esper.World) -> None:
         raise NotImplementedError

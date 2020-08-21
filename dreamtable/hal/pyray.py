@@ -5,6 +5,7 @@ A "hardware abstraction layer" that uses PyRay from python-raylib-cffi.
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, cast
 from typing_extensions import Protocol
+import uuid
 
 from esper import World
 from raylib.pyray import PyRay
@@ -95,6 +96,13 @@ class PyRayHAL(HAL):
             self.pyray.image_format(
                 self.pyray.pointer(self._images[image_handle]), format.value
             )
+
+    def gen_image_from_color(self, size: Vec2, color: Color) -> ImageHandle:
+        image_handle = str(uuid.uuid4())
+        self._images[image_handle] = self.pyray.gen_image_color(
+            int(size.x), int(size.y), color.rgba
+        )
+        return image_handle
 
     def get_image_size(self, image_handle: ImageHandle) -> Vec2:
         image = self._images[image_handle]
@@ -200,6 +208,9 @@ class PyRayHAL(HAL):
     def is_key_pressed(self, key: Key) -> bool:
         return cast(bool, self.pyray.is_key_pressed(key.value))
 
+    def is_key_down(self, key: Key) -> bool:
+        return cast(bool, self.pyray.is_key_down(key.value))
+
     def is_mouse_button_down(self, mouse_button: MouseButton) -> bool:
         return cast(bool, self.pyray.is_mouse_button_down(mouse_button.value))
 
@@ -209,7 +220,7 @@ class PyRayHAL(HAL):
     def is_mouse_button_released(self, mouse_button: MouseButton) -> bool:
         return cast(bool, self.pyray.is_mouse_button_released(mouse_button.value))
 
-    def main(self, world: World) -> None:
+    def run(self, world: World) -> None:
         while not self.pyray.window_should_close():
             self.pyray.begin_drawing()
             self.pyray.clear_background(self._clear_color.rgba)

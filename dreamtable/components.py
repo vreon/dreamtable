@@ -40,8 +40,7 @@ class WorldContext:
     # Just active cameras; kept in sync by a processor
     cameras: Mapping[PositionSpace, HALCamera] = field(default_factory=dict)
 
-    snap_x: int = 8
-    snap_y: int = 8
+    snap: Vec2 = Vec2(8, 8)
 
     mouse_pos: Vec2 = field(default_factory=Vec2)
     mouse_delta: Vec2 = field(default_factory=Vec2)
@@ -154,8 +153,7 @@ class Camera:
 @dataclass
 class BoxSelection:
     type: SelectionType = SelectionType.NORMAL
-    start_x: float = 0.0
-    start_y: float = 0.0
+    start_pos: Vec2 = field(default_factory=Vec2)
 
 
 @dataclass

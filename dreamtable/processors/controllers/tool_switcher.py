@@ -1,24 +1,22 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Key
+
+HOTKEYS = {
+    Key.Q: Tool.MOVE,
+    Key.W: Tool.PENCIL,
+    Key.E: Tool.DROPPER,
+    Key.R: Tool.GRID,
+    Key.T: Tool.CELLREF,
+    Key.Y: Tool.CELLREF_DROPPER,
+    Key.U: Tool.EGG,
+}
 
 
 class ToolSwitcherController(esper.Processor):
-    def __init__(self, pyray: PyRay) -> None:
-        self.hotkeys = {
-            pyray.KEY_Q: Tool.MOVE,
-            pyray.KEY_W: Tool.PENCIL,
-            pyray.KEY_E: Tool.DROPPER,
-            pyray.KEY_R: Tool.GRID,
-            pyray.KEY_T: Tool.CELLREF,
-            pyray.KEY_Y: Tool.CELLREF_DROPPER,
-            pyray.KEY_U: Tool.EGG,
-        }
-
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         context = self.world.context
 
         # Update the current tool if we pressed a tool switcher
@@ -29,8 +27,8 @@ class ToolSwitcherController(esper.Processor):
                 context.tool = switcher.tool
 
         # Switch to a tool if we pressed its hotkey
-        for key, tool in self.hotkeys.items():
-            if pyray.is_key_pressed(key):
+        for key, tool in HOTKEYS.items():
+            if hal.is_key_pressed(key):
                 context.tool = tool
 
         # Tool-specific temporary overrides
@@ -38,7 +36,7 @@ class ToolSwitcherController(esper.Processor):
         is_overriding = False
         if (
             context.tool == Tool.PENCIL or context.underlying_tool == Tool.PENCIL
-        ) and pyray.is_key_down(pyray.KEY_LEFT_ALT):
+        ) and hal.is_key_down(Key.LEFT_ALT):
             context.tool = Tool.DROPPER
             context.underlying_tool = Tool.PENCIL
             is_overriding = True

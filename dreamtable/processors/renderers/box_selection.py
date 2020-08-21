@@ -1,15 +1,15 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import SelectionType
 from dreamtable.hal import HAL
+from dreamtable.geom import Rect, Vec2
 
 
 class BoxSelectionRenderer(esper.Processor):
     """Draws selection regions."""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         theme = self.world.context.theme
 
         for _, (pos, ext, sel) in self.world.get_components(
@@ -17,7 +17,7 @@ class BoxSelectionRenderer(esper.Processor):
         ):
             camera = self.world.context.cameras[pos.space]
 
-            pyray.begin_mode_2d(camera)
+            hal.push_camera(camera)
 
             if sel.type == SelectionType.NORMAL:
                 fill_color = theme.color_selection_normal_fill
@@ -30,8 +30,9 @@ class BoxSelectionRenderer(esper.Processor):
             else:
                 continue
 
-            x, x_max = pos.x, pos.x + ext.width
-            y, y_max = pos.y, pos.y + ext.height
+            # todo this is just get_aabb
+            x, x_max = pos.position.x, pos.position.x + ext.extent.x
+            y, y_max = pos.position.y, pos.position.y + ext.extent.y
 
             if x > x_max:
                 x, x_max = x_max, x
@@ -39,22 +40,22 @@ class BoxSelectionRenderer(esper.Processor):
             if y > y_max:
                 y, y_max = y_max, y
 
-            width = abs(x_max - x)
-            height = abs(y_max - y)
+            width = x_max - x
+            height = y_max - y
 
-            rect = pyray.Rectangle(int(x), int(y), int(width), int(height))
-            pyray.draw_rectangle_rec(rect, fill_color.rgba)
-            pyray.draw_rectangle_lines_ex(rect, 1, outline_color.rgba)
+            rect = Rect(x, y, width, height).floored
+            hal.draw_rectangle(rect, fill_color)
+            hal.draw_rectangle_lines(rect, 1, outline_color)
 
             if labeled:
-                text_pos = pyray.Vector2(int(x), int(y) - 8)
-                pyray.draw_text_ex(
+                text_pos = Vec2(x, y - 8)
+                hal.draw_text(
                     theme.font,
                     f"{int(width)}x{int(height)}",
-                    text_pos,
-                    8,
-                    1,
-                    theme.color_text_normal.rgba,
+                    text_pos.floored,
+                    size=8,
+                    spacing=1,
+                    color=theme.color_text_normal,
                 )
 
-            pyray.end_mode_2d()
+            hal.pop_camera()

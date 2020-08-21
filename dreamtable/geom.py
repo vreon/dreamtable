@@ -601,20 +601,19 @@ class Rect:
     #         """Return true if this rectangle is outside the given shape."""
     #         return not self.touching(other)
 
-    #     @accept_anything_as_rectangle
-    #     def touching(self, other):
-    #         """Return true if this rectangle is touching the given shape."""
-    #         if self.top < other.bottom:
-    #             return False
-    #         if self.bottom > other.top:
-    #             return False
+    def touching(self, other: Rect) -> bool:
+        """Return true if this rectangle is touching the given shape."""
+        if self.y < other.bottom:
+            return False
+        if self.bottom > other.y:
+            return False
 
-    #         if self.left > other.right:
-    #             return False
-    #         if self.right < other.left:
-    #             return False
+        if self.x > other.right:
+            return False
+        if self.right < other.x:
+            return False
 
-    #         return True
+        return True
 
     def contains(self, other: Union[Vec2, Rect]) -> bool:
         """Return true if the other Vec2 or Rect is inside this rectangle."""

@@ -154,44 +154,44 @@ def run() -> None:
     )
 
     # Register controllers and renderers (flavors of processors)
-    for processor in [
+    for processor_class in [
         # global state and input
-        p.CameraContextController(),
-        p.MouseController(),
+        p.CameraContextController,
+        p.MouseController,
         # controllers
-        # p.PencilToolController(),
-        # p.DropperToolController(),
-        # p.GridToolController(),
-        # p.EggToolController(),
-        p.DragController(),
-        p.HoverController(),
-        # p.PressController(),
-        # p.BoxSelectionController(),
-        p.ImageController(),
-        # p.ToolSwitcherController(hal.pyray),
-        # p.CanvasExportController(),
-        p.CameraController(),
-        p.MotionController(),
-        # p.WanderingController(),
-        # p.EggTimerController(),
-        # p.TinyFriendController(),
+        # p.PencilToolController,
+        # p.DropperToolController,
+        # p.GridToolController,
+        # p.EggToolController,
+        p.DragController,
+        p.HoverController,
+        p.PressController,
+        p.BoxSelectionController,
+        p.ImageController,
+        p.ToolSwitcherController,
+        # p.CanvasExportController,
+        p.CameraController,
+        p.MotionController,
+        # p.WanderingController,
+        # p.EggTimerController,
+        # p.TinyFriendController,
         # renderers (world)
-        p.BackgroundGridRenderer(),
-        p.PositionMarkerRenderer(),
-        # p.CanvasRenderer(),
-        p.SpriteRegionRenderer(),
-        p.DebugEntityRenderer(),
+        p.BackgroundGridRenderer,
+        p.PositionMarkerRenderer,
+        # p.CanvasRenderer,
+        p.SpriteRegionRenderer,
+        p.DebugEntityRenderer,
         # renderers (ui)
-        # p.BoxSelectionRenderer(),
-        p.ButtonRenderer(),
-        # p.DropperToolRenderer(),
-        # p.PencilToolRenderer(),
-        # p.GridToolRenderer(),
+        p.BoxSelectionRenderer,
+        p.ButtonRenderer,
+        # p.DropperToolRenderer,
+        # p.PencilToolRenderer,
+        # p.GridToolRenderer,
         # cleanup
-        # p.SelectableDeleteController(),
-        p.ImageDeleteController(),
-        p.FinalDeleteController(),
+        # p.SelectableDeleteController,
+        p.ImageDeleteController,
+        p.FinalDeleteController,
     ]:
-        world.add_processor(processor)
+        world.add_processor(processor_class())
 
-    hal.main(world)
+    hal.run(world)
