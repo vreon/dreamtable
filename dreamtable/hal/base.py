@@ -13,9 +13,6 @@ from dreamtable.hal.geom import Vec2, Rect
 
 
 class HAL:
-    def __init__(self) -> None:
-        raise NotImplementedError
-
     def init_window(self, width: int, height: int, title: str) -> None:
         raise NotImplementedError
 

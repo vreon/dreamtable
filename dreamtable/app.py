@@ -3,12 +3,16 @@ import esper
 from dreamtable import components as c
 from dreamtable import processors as p
 from dreamtable.constants import PositionSpace, Tool
-from dreamtable.hal import Camera, Vec2
+from dreamtable.hal import Camera, Color, Vec2
+
 from dreamtable.hal.pyray import PyRayHAL
+
+# from dreamtable.hal.pysdl2 import PySDL2HAL
 
 
 def run() -> None:
     hal = PyRayHAL()
+    # hal = PySDL2HAL()
     hal.init_window(800, 600, "Dream Table")
 
     font = hal.load_font("res://fonts/alpha_beta.png")
@@ -26,6 +30,8 @@ def run() -> None:
     world.context = c.WorldContext(
         cameras={PositionSpace.SCREEN: Camera(zoom=3)}, theme=c.Theme(font=font),
     )
+
+    hal.set_clear_color(Color(0, 0, 0, 255))
 
     # Spawn initial entities
     world.create_entity(
