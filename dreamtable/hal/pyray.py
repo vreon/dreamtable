@@ -55,11 +55,39 @@ class PyRayHAL(HAL):
         self._images: Dict[ImageHandle, PyRayImage] = {}
         self._textures: Dict[TextureHandle, PyRayTexture] = {}
 
+    # Window and screen
+
     def init_window(self, width: int, height: int, title: str) -> None:
         self.pyray.init_window(width, height, title)
 
+    def get_screen_size(self) -> Vec2:
+        return Vec2(self.pyray.get_screen_width(), self.pyray.get_screen_height())
+
+    def get_screen_rect(self) -> Rect:
+        return Rect.from_size(
+            self.pyray.get_screen_width(), self.pyray.get_screen_height()
+        )
+
     def set_clear_color(self, color: Color) -> None:
         self._clear_color = color
+
+    def push_camera(self, camera: Camera) -> None:
+        camera_2d = self.pyray.Camera2D(
+            camera.offset.xy, camera.target.xy, camera.rotation, camera.zoom
+        )
+        self.pyray.begin_mode_2d(camera_2d)
+
+    def pop_camera(self) -> None:
+        self.pyray.end_mode_2d()
+
+    def get_screen_to_world(self, pos: Vec2, camera: Camera) -> Vec2:
+        camera_2d = self.pyray.Camera2D(
+            camera.offset.xy, camera.target.xy, camera.rotation, camera.zoom
+        )
+        world_pos = self.pyray.get_screen_to_world_2d(pos.xy, camera_2d)
+        return Vec2(world_pos.x, world_pos.y)
+
+    # Resource loading / unloading
 
     # todo: whoops, these aren't idempotent
     # duplicate will clobber already-loaded resources
@@ -85,6 +113,31 @@ class PyRayHAL(HAL):
         )
         return image_handle
 
+    def unload_image(self, image_handle: ImageHandle) -> None:
+        self.pyray.unload_image(self._images[image_handle])
+        del self._images[image_handle]
+
+    def unload_texture(self, texture_handle: TextureHandle) -> None:
+        self.pyray.unload_texture(self._textures[texture_handle])
+        del self._textures[texture_handle]
+
+    def gen_image_from_color(self, size: Vec2, color: Color) -> ImageHandle:
+        image_handle = str(uuid.uuid4())
+        self._images[image_handle] = self.pyray.gen_image_color(
+            int(size.x), int(size.y), color.rgba
+        )
+        return image_handle
+
+    # Resource reading / writing
+
+    def update_texture_from_image(
+        self, texture_handle: TextureHandle, image_handle: ImageHandle
+    ) -> None:
+        self.pyray.update_texture(
+            self._textures[texture_handle],
+            self.pyray.get_image_data(self._images[image_handle]),
+        )
+
     def set_image_format(
         self, image_handle: ImageHandle, format: TextureFormat
     ) -> None:
@@ -93,13 +146,6 @@ class PyRayHAL(HAL):
             self.pyray.image_format(
                 self.pyray.pointer(self._images[image_handle]), format.value
             )
-
-    def gen_image_from_color(self, size: Vec2, color: Color) -> ImageHandle:
-        image_handle = str(uuid.uuid4())
-        self._images[image_handle] = self.pyray.gen_image_color(
-            int(size.x), int(size.y), color.rgba
-        )
-        return image_handle
 
     # NOTE: PyRay.draw_image_line is broken on my machine, so this
     # is a reimplementation
@@ -139,40 +185,10 @@ class PyRayHAL(HAL):
         color = self.pyray.get_image_data(image)[image.width * int(pos.y) + int(pos.x)]
         return Color(color.r, color.g, color.b, color.a)
 
-    def update_texture_from_image(
-        self, texture_handle: TextureHandle, image_handle: ImageHandle
-    ) -> None:
-        self.pyray.update_texture(
-            self._textures[texture_handle],
-            self.pyray.get_image_data(self._images[image_handle]),
-        )
-
     def export_image(self, image_handle: ImageHandle, filename: str) -> None:
         self.pyray.export_image(self._images[image_handle], filename)
 
-    def unload_image(self, image_handle: ImageHandle) -> None:
-        self.pyray.unload_image(self._images[image_handle])
-        del self._images[image_handle]
-
-    def unload_texture(self, texture_handle: TextureHandle) -> None:
-        self.pyray.unload_texture(self._textures[texture_handle])
-        del self._textures[texture_handle]
-
-    def push_camera(self, camera: Camera) -> None:
-        camera_2d = self.pyray.Camera2D(
-            camera.offset.xy, camera.target.xy, camera.rotation, camera.zoom
-        )
-        self.pyray.begin_mode_2d(camera_2d)
-
-    def pop_camera(self) -> None:
-        self.pyray.end_mode_2d()
-
-    def get_screen_to_world(self, pos: Vec2, camera: Camera) -> Vec2:
-        camera_2d = self.pyray.Camera2D(
-            camera.offset.xy, camera.target.xy, camera.rotation, camera.zoom
-        )
-        world_pos = self.pyray.get_screen_to_world_2d(pos.xy, camera_2d)
-        return Vec2(world_pos.x, world_pos.y)
+    # Screen drawing
 
     def draw_text(
         self,
@@ -225,25 +241,18 @@ class PyRayHAL(HAL):
     ) -> Vec2:
         return _vec2(self.pyray.measure_text_ex(self._fonts[font], text, size, spacing))
 
-    def get_mouse_position(self) -> Vec2:
-        return _vec2(self.pyray.get_mouse_position())
-
-    def get_mouse_wheel_move(self) -> float:
-        return cast(float, self.pyray.get_mouse_wheel_move())
-
-    def get_screen_size(self) -> Vec2:
-        return Vec2(self.pyray.get_screen_width(), self.pyray.get_screen_height())
-
-    def get_screen_rect(self) -> Rect:
-        return Rect.from_size(
-            self.pyray.get_screen_width(), self.pyray.get_screen_height()
-        )
+    # Keyboard
 
     def is_key_pressed(self, key: Key) -> bool:
         return cast(bool, self.pyray.is_key_pressed(key.value))
 
     def is_key_down(self, key: Key) -> bool:
         return cast(bool, self.pyray.is_key_down(key.value))
+
+    def is_key_released(self, key: Key) -> bool:
+        return cast(bool, self.pyray.is_key_released(key.value))
+
+    # Mouse
 
     def is_mouse_button_down(self, mouse_button: MouseButton) -> bool:
         return cast(bool, self.pyray.is_mouse_button_down(mouse_button.value))
@@ -253,6 +262,12 @@ class PyRayHAL(HAL):
 
     def is_mouse_button_released(self, mouse_button: MouseButton) -> bool:
         return cast(bool, self.pyray.is_mouse_button_released(mouse_button.value))
+
+    def get_mouse_position(self) -> Vec2:
+        return _vec2(self.pyray.get_mouse_position())
+
+    def get_mouse_wheel_move(self) -> float:
+        return cast(float, self.pyray.get_mouse_wheel_move())
 
     def run(self, world: World) -> None:
         while not self.pyray.window_should_close():
