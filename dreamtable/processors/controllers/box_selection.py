@@ -24,26 +24,27 @@ class BoxSelectionController(esper.Processor):
                 # If we just clicked, select only this.
                 # todo if we're holding shift, don't deselect other stuff
                 if hal.is_mouse_button_pressed(MouseButton.LEFT):
+                    hal.clear_mouse_button_pressed(MouseButton.LEFT)
                     for sel_ent, sel in self.world.get_component(c.Selectable):
                         sel.selected = ent == sel_ent
 
                 break
 
         # Create new selections
-        if not hovering_any and not context.mouse_reserved:
+        if not hovering_any:
             # New selections always go into world space
             # Maybe change this someday? idk
             space = PositionSpace.WORLD
             start_pos = hal.get_screen_to_world(mouse_pos, context.cameras[space])
             if hal.is_mouse_button_pressed(MouseButton.LEFT):
-                context.mouse_reserved = True
+                hal.clear_mouse_button_pressed(MouseButton.LEFT)
                 self.world.create_entity(
                     c.Position(space=space),
                     c.Extent(),
                     c.BoxSelection(start_pos=start_pos),
                 )
             elif hal.is_mouse_button_pressed(MouseButton.RIGHT):
-                context.mouse_reserved = True
+                hal.clear_mouse_button_pressed(MouseButton.RIGHT)
                 self.world.create_entity(
                     c.Position(space=space),
                     c.Extent(),
@@ -101,14 +102,12 @@ class BoxSelectionController(esper.Processor):
             if selection.type == SelectionType.NORMAL and hal.is_mouse_button_released(
                 MouseButton.LEFT
             ):
-                context.mouse_reserved = False
                 self.world.delete_entity(ent)
                 continue
             elif (
                 selection.type == SelectionType.CREATE
                 and hal.is_mouse_button_released(MouseButton.RIGHT)
             ):
-                context.mouse_reserved = False
                 self.world.create_entity(
                     c.Name("Canvas"),
                     c.Position(pos.position.copy()),

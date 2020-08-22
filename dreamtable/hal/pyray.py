@@ -3,7 +3,7 @@ A "hardware abstraction layer" that uses PyRay from python-raylib-cffi.
 """
 
 from pathlib import Path
-from typing import Any, Dict, cast
+from typing import Any, Dict, Set, cast
 from typing_extensions import Protocol
 import uuid
 
@@ -54,6 +54,12 @@ class PyRayHAL(HAL):
         self._fonts: Dict[FontHandle, PyRayFont] = {}
         self._images: Dict[ImageHandle, PyRayImage] = {}
         self._textures: Dict[TextureHandle, PyRayTexture] = {}
+
+        self._cleared_key_presses: Set[Key] = set()
+        self._cleared_key_releases: Set[Key] = set()
+        self._cleared_mouse_button_presses: Set[MouseButton] = set()
+        self._cleared_mouse_button_releases: Set[MouseButton] = set()
+        self._is_mouse_wheel_move_cleared = False
 
     # Window and screen
 
@@ -243,14 +249,24 @@ class PyRayHAL(HAL):
 
     # Keyboard
 
-    def is_key_pressed(self, key: Key) -> bool:
-        return cast(bool, self.pyray.is_key_pressed(key.value))
-
     def is_key_down(self, key: Key) -> bool:
         return cast(bool, self.pyray.is_key_down(key.value))
 
+    def is_key_pressed(self, key: Key) -> bool:
+        if key in self._cleared_key_presses:
+            return False
+        return cast(bool, self.pyray.is_key_pressed(key.value))
+
     def is_key_released(self, key: Key) -> bool:
+        if key in self._cleared_key_releases:
+            return False
         return cast(bool, self.pyray.is_key_released(key.value))
+
+    def clear_key_pressed(self, key: Key) -> None:
+        self._cleared_key_presses.add(key)
+
+    def clear_key_releases(self, key: Key) -> None:
+        self._cleared_key_releases.add(key)
 
     # Mouse
 
@@ -258,19 +274,42 @@ class PyRayHAL(HAL):
         return cast(bool, self.pyray.is_mouse_button_down(mouse_button.value))
 
     def is_mouse_button_pressed(self, mouse_button: MouseButton) -> bool:
+        if mouse_button in self._cleared_mouse_button_presses:
+            return False
         return cast(bool, self.pyray.is_mouse_button_pressed(mouse_button.value))
 
     def is_mouse_button_released(self, mouse_button: MouseButton) -> bool:
+        if mouse_button in self._cleared_mouse_button_releases:
+            return False
         return cast(bool, self.pyray.is_mouse_button_released(mouse_button.value))
+
+    def clear_mouse_button_pressed(self, mouse_button: MouseButton) -> None:
+        self._cleared_mouse_button_presses.add(mouse_button)
+
+    def clear_mouse_button_released(self, mouse_button: MouseButton) -> None:
+        self._cleared_mouse_button_releases.add(mouse_button)
 
     def get_mouse_position(self) -> Vec2:
         return _vec2(self.pyray.get_mouse_position())
 
     def get_mouse_wheel_move(self) -> float:
+        if self._is_mouse_wheel_move_cleared:
+            return 0
         return cast(float, self.pyray.get_mouse_wheel_move())
+
+    def clear_mouse_wheel_move(self) -> None:
+        self._is_mouse_wheel_move_cleared = True
+
+    def _reset_cleared_inputs(self) -> None:
+        self._is_mouse_wheel_move_cleared = False
+        self._cleared_key_presses.clear()
+        self._cleared_key_releases.clear()
+        self._cleared_mouse_button_presses.clear()
+        self._cleared_mouse_button_releases.clear()
 
     def run(self, world: World) -> None:
         while not self.pyray.window_should_close():
+            self._reset_cleared_inputs()
             self.pyray.begin_drawing()
             self.pyray.clear_background(self._clear_color.rgba)
             world.process(self)

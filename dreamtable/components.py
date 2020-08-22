@@ -60,10 +60,6 @@ class WorldContext:
     mouse_delta: Vec2 = field(default_factory=Vec2)
     mouse_wheel: int = 0
 
-    # todo this is janky af
-    # it's used to stop propagation of mouse click events
-    mouse_reserved: bool = False
-
 
 @dataclass
 class Theme:

@@ -32,5 +32,6 @@ class GridToolController(esper.Processor):
 
             # todo update cellrefs I guess
 
+            hal.clear_mouse_wheel_move()
             context.mouse_wheel = 0
             break

@@ -16,11 +16,8 @@ class PressController(esper.Processor):
             rect = c.rect(pos.position, ext.extent)
             press.pressed = False
 
-            if (
-                not self.world.context.mouse_reserved
-                and hal.is_mouse_button_pressed(MouseButton.LEFT)
-                and press_pos in rect
-            ):
+            if hal.is_mouse_button_pressed(MouseButton.LEFT) and press_pos in rect:
+                hal.clear_mouse_button_pressed(MouseButton.LEFT)
                 press.pressed = True
                 press.down = True
 

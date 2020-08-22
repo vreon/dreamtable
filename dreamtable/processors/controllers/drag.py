@@ -18,12 +18,7 @@ class DragController(esper.Processor):
             camera = self.world.context.cameras[pos.space]
             drag_pos = hal.get_screen_to_world(mouse_pos, camera)
             rect = c.rect(pos.position, ext.extent)
-            if (
-                not self.world.context.mouse_reserved
-                and hal.is_mouse_button_pressed(MouseButton.LEFT)
-                and drag_pos in rect
-            ):
-                self.world.context.mouse_reserved = True
+            if hal.is_mouse_button_pressed(MouseButton.LEFT) and drag_pos in rect:
                 drag.dragging = True
                 drag.offset = drag_pos - pos.position
 
@@ -33,6 +28,5 @@ class DragController(esper.Processor):
                 # todo snap to grid
 
             if hal.is_mouse_button_released(MouseButton.LEFT):
-                self.world.context.mouse_reserved = False
                 drag.dragging = False
                 drag.offset = None
