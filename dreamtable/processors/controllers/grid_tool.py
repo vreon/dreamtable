@@ -2,7 +2,7 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, MouseButton
 
 
 class GridToolController(esper.Processor):
@@ -21,6 +21,9 @@ class GridToolController(esper.Processor):
 
             if mouse_world_pos not in rect:
                 continue
+
+            if hal.is_mouse_button_pressed(MouseButton.LEFT):
+                canvas.cell_grid_always_visible = not canvas.cell_grid_always_visible
 
             cellgrid.x += context.mouse_wheel
             cellgrid.y += context.mouse_wheel
