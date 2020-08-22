@@ -282,7 +282,8 @@ class PySDL2HAL(DebugHAL):
     def is_key_down(self, key: Key) -> bool:
         return self._is_key_down.get(key, False)
 
-    # todo: is_key_released needs to be added to base lol
+    def is_key_released(self, key: Key) -> bool:
+        return self._is_key_released.get(key, False)
 
     def is_mouse_button_down(self, mouse_button: MouseButton) -> bool:
         return self._is_mouse_button_down.get(mouse_button, False)
