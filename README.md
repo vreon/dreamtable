@@ -1,4 +1,4 @@
-# Dream Table (working title)
+# Dream Table (pre-alpha)
 
 An infinite canvas for retro game assets.
 
