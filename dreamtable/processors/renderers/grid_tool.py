@@ -1,13 +1,12 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Vec2
 
 
 class GridToolRenderer(esper.Processor):
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         context = self.world.context
 
         if not context.tool == Tool.GRID:
@@ -19,11 +18,10 @@ class GridToolRenderer(esper.Processor):
             c.Canvas, c.Position, c.Extent, c.CellGrid
         ):
             camera = context.cameras[pos.space]
+            hal.push_camera(camera)
 
-            pyray.begin_mode_2d(camera)
-
-            cell_w = ext.width / cellgrid.x
-            cell_h = ext.height / cellgrid.y
+            cell_w = ext.extent.x / cellgrid.x
+            cell_h = ext.extent.y / cellgrid.y
 
             if cell_w.is_integer() and cell_h.is_integer():
                 text_color = theme.color_text_normal
@@ -32,16 +30,13 @@ class GridToolRenderer(esper.Processor):
                 text_color = theme.color_text_error
                 cell_dimensions = f"{cell_w:.2f}x{cell_h:.2f}"
 
-            text_offset_x = 0
-            text_offset_y = -8
-
-            pyray.draw_text_ex(
+            hal.draw_text(
                 theme.font,
                 str(f"{cellgrid.x}x{cellgrid.y} @ {cell_dimensions}"),
-                (pos.x + text_offset_x, pos.y + text_offset_y),
+                pos.position + Vec2(0, -8),
                 8,
                 1,
                 text_color,
             )
 
-            pyray.end_mode_2d()
+            hal.pop_camera()

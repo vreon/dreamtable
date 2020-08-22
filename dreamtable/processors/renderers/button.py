@@ -2,7 +2,6 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.hal import HAL
-from dreamtable.geom import Vec2
 
 
 class ButtonRenderer(esper.Processor):

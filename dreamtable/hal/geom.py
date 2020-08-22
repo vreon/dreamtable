@@ -3,7 +3,7 @@ Geometry classes.
 """
 
 # Original implementation from `vecrec`: https://github.com/kxgames/vecrec
-# Removed autoprop, added more strict typing + annotations
+# Removed autoprop, added more strict typing + annotations, broke things
 #
 # The MIT License (MIT)
 #
@@ -872,20 +872,3 @@ class Rect:
         result = self.copy()
         result.floor()
         return result
-
-
-# def interpolate(a, b, num_points=3):
-#     """Return a list of vectors that linearly interpolate between the given
-#     vectors."""
-#     a = cast_anything_to_vector(a)
-#     b = cast_anything_to_vector(b)
-#     interpolation = [a]
-#     steps = num_points - 1
-#     assert steps >= 0
-
-#     for step in range(1, steps):
-#         v = a.get_interpolated(b, step / steps)
-#         interpolation.append(v)
-
-#     interpolation.append(b)
-#     return interpolation

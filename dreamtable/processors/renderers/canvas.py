@@ -2,8 +2,7 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.hal import HAL
-from dreamtable.geom import Vec2
+from dreamtable.hal import HAL, Vec2
 
 
 class CanvasRenderer(esper.Processor):

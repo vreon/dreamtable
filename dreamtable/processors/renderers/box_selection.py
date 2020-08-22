@@ -2,8 +2,7 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.constants import SelectionType
-from dreamtable.hal import HAL
-from dreamtable.geom import Rect, Vec2
+from dreamtable.hal import HAL, Rect, Vec2
 
 
 class BoxSelectionRenderer(esper.Processor):

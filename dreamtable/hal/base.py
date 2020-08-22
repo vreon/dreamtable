@@ -1,5 +1,3 @@
-from typing import Iterable, List
-
 import esper
 from dreamtable.hal.types import (
     FontHandle,
@@ -11,7 +9,7 @@ from dreamtable.hal.types import (
     MouseButton,
     TextureFormat,
 )
-from dreamtable.geom import Vec2, Rect
+from dreamtable.hal.geom import Vec2, Rect
 
 
 class HAL:
@@ -30,9 +28,6 @@ class HAL:
     def load_texture_from_image(self, image_handle: ImageHandle) -> TextureHandle:
         raise NotImplementedError
 
-    def get_image_data(self, image_handle: ImageHandle) -> List[Color]:
-        raise NotImplementedError
-
     def set_image_format(
         self, image_handle: ImageHandle, format: TextureFormat
     ) -> None:
@@ -41,12 +36,23 @@ class HAL:
     def gen_image_from_color(self, size: Vec2, color: Color) -> ImageHandle:
         raise NotImplementedError
 
+    def draw_image_line(
+        self, image_handle: ImageHandle, start: Vec2, end: Vec2, color: Color
+    ) -> None:
+        raise NotImplementedError
+
     def get_image_size(self, image_handle: ImageHandle) -> Vec2:
         raise NotImplementedError
 
-    def update_texture(
-        self, texture_handle: TextureHandle, image_data: Iterable[Color]
+    def get_image_color(self, image_handle: ImageHandle, pos: Vec2) -> Color:
+        raise NotImplementedError
+
+    def update_texture_from_image(
+        self, texture_handle: TextureHandle, image_handle: ImageHandle
     ) -> None:
+        raise NotImplementedError
+
+    def export_image(self, image_handle: ImageHandle, filename: str) -> None:
         raise NotImplementedError
 
     def unload_image(self, image_handle: ImageHandle) -> None:

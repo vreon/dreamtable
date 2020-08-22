@@ -3,9 +3,8 @@ import esper
 from dreamtable import components as c
 from dreamtable import processors as p
 from dreamtable.constants import PositionSpace, Tool
-from dreamtable.hal import Camera
+from dreamtable.hal import Camera, Vec2
 from dreamtable.hal.pyray import PyRayHAL
-from dreamtable.geom import Vec2
 
 
 def run() -> None:
@@ -160,8 +159,8 @@ def run() -> None:
         p.CameraContextController,
         p.MouseController,
         # controllers
-        # p.PencilToolController,
-        # p.DropperToolController,
+        p.PencilToolController,
+        p.DropperToolController,
         p.GridToolController,
         p.EggToolController,
         p.DragController,
@@ -170,7 +169,7 @@ def run() -> None:
         p.BoxSelectionController,
         p.ImageController,
         p.ToolSwitcherController,
-        # p.CanvasExportController,
+        p.CanvasExportController,
         p.CameraController,
         p.MotionController,
         p.WanderingController,
@@ -185,9 +184,9 @@ def run() -> None:
         # renderers (ui)
         p.BoxSelectionRenderer,
         p.ButtonRenderer,
-        # p.DropperToolRenderer,
-        # p.PencilToolRenderer,
-        # p.GridToolRenderer,
+        p.DropperToolRenderer,
+        p.PencilToolRenderer,
+        p.GridToolRenderer,
         # cleanup
         p.SelectableDeleteController,
         p.ImageDeleteController,

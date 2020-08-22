@@ -8,4 +8,5 @@ from .types import (
     MouseButton,
     TextureFormat,
 )
+from .geom import Vec2, Rect
 from .base import HAL

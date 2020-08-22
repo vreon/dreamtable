@@ -1,26 +1,17 @@
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable.constants import Tool
-from dreamtable.utils import get_outline_rect
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Color, Vec2, Rect
 
 
 class DropperToolRenderer(esper.Processor):
-    def process(self, pyray: PyRay, hal: HAL) -> None:
+    def process(self, hal: HAL) -> None:
         context = self.world.context
 
         if context.tool != Tool.DROPPER:
             return
 
-        rect_tuple = (
-            int(context.mouse_pos_x) + 16,
-            int(context.mouse_pos_y) - 50,
-            33,
-            33,
-        )
-        rect = pyray.Rectangle(*rect_tuple)
-        pyray.draw_rectangle_rec(rect, context.color_dropper)
-        pyray.draw_rectangle_lines_ex(
-            pyray.Rectangle(*get_outline_rect(*rect_tuple)), 1, (255, 255, 255, 255)
-        )
+        pos = context.mouse_pos + Vec2(16, -50)
+        rect = Rect(pos.x, pos.y, 33, 33)
+        hal.draw_rectangle(rect, context.color_dropper)
+        hal.draw_rectangle_lines(rect.grown(1), 1, Color(255, 255, 255, 255))

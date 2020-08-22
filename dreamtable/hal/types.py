@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 import enum
 from typing import Tuple
 
-from dreamtable.geom import Vec2
+from dreamtable.hal.geom import Vec2
 
 FontHandle = object
 ImageHandle = object

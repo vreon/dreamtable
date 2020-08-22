@@ -5,8 +5,7 @@ import esper
 from dreamtable import components as c
 from dreamtable.constants import PositionSpace, SelectionType
 from dreamtable.utils import get_aabb
-from dreamtable.hal import HAL, MouseButton
-from dreamtable.geom import Rect, Vec2
+from dreamtable.hal import HAL, MouseButton, Rect, Vec2
 
 
 class BoxSelectionController(esper.Processor):

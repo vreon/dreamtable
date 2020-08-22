@@ -4,8 +4,7 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.constants import PositionSpace, Tool
-from dreamtable.hal import HAL, MouseButton
-from dreamtable.geom import Vec2
+from dreamtable.hal import HAL, MouseButton, Vec2
 
 
 class EggToolController(esper.Processor):

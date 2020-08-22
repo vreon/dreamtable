@@ -3,15 +3,15 @@ A "hardware abstraction layer" that uses PyRay from python-raylib-cffi.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, cast
+from typing import Any, Dict, cast
 from typing_extensions import Protocol
 import uuid
 
 from esper import World
 from raylib.pyray import PyRay
 
-from dreamtable.geom import Rect, Vec2
 from dreamtable.hal.base import HAL
+from dreamtable.hal.geom import Rect, Vec2
 from dreamtable.hal.types import (
     Camera,
     Color,
@@ -85,12 +85,6 @@ class PyRayHAL(HAL):
         )
         return image_handle
 
-    def get_image_data(self, image_handle: ImageHandle) -> List[Color]:
-        return [
-            Color(c.r, c.g, c.b, c.a)
-            for c in self.pyray.get_image_data(self._images[image_handle])
-        ]
-
     def set_image_format(
         self, image_handle: ImageHandle, format: TextureFormat
     ) -> None:
@@ -107,17 +101,54 @@ class PyRayHAL(HAL):
         )
         return image_handle
 
+    # NOTE: PyRay.draw_image_line is broken on my machine, so this
+    # is a reimplementation
+    def draw_image_line(
+        self, image_handle: ImageHandle, start: Vec2, end: Vec2, color: Color
+    ) -> None:
+        image_ptr = self.pyray.pointer(self._images[image_handle])
+        x1 = int(start.x)
+        y1 = int(start.y)
+        x2 = int(end.x)
+        y2 = int(end.y)
+
+        dx = abs(x2 - x1)
+        sx = 1 if x1 < x2 else -1
+        dy = -abs(y2 - y1)
+        sy = 1 if y1 < y2 else -1
+        err = dx + dy
+
+        while True:
+            self.pyray.image_draw_pixel(image_ptr, x1, y1, color.rgba)
+            if x1 == x2 and y1 == y2:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x1 += sx
+            if e2 <= dx:
+                err += dx
+                y1 += sy
+
     def get_image_size(self, image_handle: ImageHandle) -> Vec2:
         image = self._images[image_handle]
         return Vec2(image.width, image.height)
 
-    def update_texture(
-        self, texture_handle: TextureHandle, image_data: Iterable[Color]
+    def get_image_color(self, image_handle: ImageHandle, pos: Vec2) -> Color:
+        image = self._images[image_handle]
+        color = self.pyray.get_image_data(image)[image.width * int(pos.y) + int(pos.x)]
+        return Color(color.r, color.g, color.b, color.a)
+
+    def update_texture_from_image(
+        self, texture_handle: TextureHandle, image_handle: ImageHandle
     ) -> None:
         self.pyray.update_texture(
             self._textures[texture_handle],
-            [self.pyray.Color(*c.rgba) for c in image_data],
+            self.pyray.get_image_data(self._images[image_handle]),
         )
+
+    def export_image(self, image_handle: ImageHandle, filename: str) -> None:
+        self.pyray.export_image(self._images[image_handle], filename)
 
     def unload_image(self, image_handle: ImageHandle) -> None:
         self.pyray.unload_image(self._images[image_handle])

@@ -1,21 +1,20 @@
 from datetime import datetime
 
 import esper
-from raylib.pyray import PyRay
 
 from dreamtable import components as c
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Key
 
 
 class CanvasExportController(esper.Processor):
     """Export selected Canvas images to a directory"""
 
-    def process(self, pyray: PyRay, hal: HAL) -> None:
-        is_control_down = pyray.is_key_down(
-            pyray.KEY_LEFT_CONTROL
-        ) or pyray.is_key_down(pyray.KEY_RIGHT_CONTROL)
+    def process(self, hal: HAL) -> None:
+        is_control_down = hal.is_key_down(Key.LEFT_CONTROL) or hal.is_key_down(
+            Key.RIGHT_CONTROL
+        )
 
-        if not (is_control_down and pyray.is_key_pressed(pyray.KEY_S)):
+        if not (is_control_down and hal.is_key_pressed(Key.S)):
             return
 
         for _, (_, sel, img) in self.world.get_components(
@@ -28,4 +27,4 @@ class CanvasExportController(esper.Processor):
             filename = (
                 f"save/thingy_{img.image.width}x{img.image.height}_{timestamp}.png"
             )
-            pyray.export_image(img.image, filename)
+            hal.export_image(img.image, filename)

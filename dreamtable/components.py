@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Mapping, Iterable, Optional
+from typing import Mapping, Optional
 from typing_extensions import Protocol
 
 from dreamtable.constants import PositionSpace, SelectionType, Tool
-from dreamtable.geom import Vec2, Rect
 from dreamtable.hal import (
     Camera as HALCamera,
     Color,
     FontHandle,
     ImageHandle,
     TextureHandle,
+    Vec2,
+    Rect,
 )
 
 
@@ -202,7 +203,6 @@ class Canvas:
 @dataclass
 class Image:
     image: ImageHandle
-    data: Optional[Iterable[Color]] = None
     texture: Optional[TextureHandle] = None
     dirty: bool = False
 
