@@ -1,6 +1,7 @@
 from .box_selection import BoxSelectionController
 from .camera_context import CameraContextController
 from .camera import CameraController
+from .canvas_delete import CanvasDeleteController
 from .canvas_export import CanvasExportController
 from .drag import DragController
 from .dropper_tool import DropperToolController
@@ -10,7 +11,6 @@ from .final_delete import FinalDeleteController
 from .grid_tool import GridToolController
 from .hover import HoverController
 from .image import ImageController
-from .image_delete import ImageDeleteController
 from .motion import MotionController
 from .mouse import MouseController
 from .pencil_tool import PencilToolController

@@ -195,7 +195,7 @@ def run() -> None:
         p.GridToolRenderer,
         # cleanup
         p.SelectableDeleteController,
-        p.ImageDeleteController,
+        p.CanvasDeleteController,
         p.FinalDeleteController,
     ]:
         world.add_processor(processor_class())

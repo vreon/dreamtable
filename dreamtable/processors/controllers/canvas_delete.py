@@ -4,11 +4,13 @@ from dreamtable import components as c
 from dreamtable.hal import HAL
 
 
-class ImageDeleteController(esper.Processor):
-    """Unloads image (and texture) when the entity is deleted."""
+class CanvasDeleteController(esper.Processor):
+    """Unloads canvas image (and texture) when the entity is deleted."""
 
     def process(self, hal: HAL) -> None:
-        for _, (img, del_) in self.world.get_components(c.Image, c.Deletable):
+        for _, (_, img, del_) in self.world.get_components(
+            c.Canvas, c.Image, c.Deletable
+        ):
             if not del_.deleted:
                 continue
 
