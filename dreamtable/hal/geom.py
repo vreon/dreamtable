@@ -603,9 +603,9 @@ class Rect:
 
     def touching(self, other: Rect) -> bool:
         """Return true if this rectangle is touching the given shape."""
-        if self.y < other.bottom:
+        if self.y > other.bottom:
             return False
-        if self.bottom > other.y:
+        if self.bottom < other.y:
             return False
 
         if self.x > other.right:
