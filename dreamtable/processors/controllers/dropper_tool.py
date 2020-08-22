@@ -2,7 +2,7 @@ import esper
 
 from dreamtable.constants import Tool
 from dreamtable import components as c
-from dreamtable.hal import HAL, MouseButton, Color
+from dreamtable.hal import HAL, MouseButton
 
 
 class DropperToolController(esper.Processor):

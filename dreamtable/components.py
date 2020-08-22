@@ -17,6 +17,19 @@ from dreamtable.hal import (
 
 
 ################################################################################
+# Types, helpers
+
+
+class XY(Protocol):
+    x: float
+    y: float
+
+
+def rect(xy: XY, wh: XY) -> Rect:
+    return Rect(xy.x, xy.y, wh.x, wh.y)
+
+
+################################################################################
 # Global data associated with the entire world
 # Can be read or written to by processors
 
@@ -76,19 +89,6 @@ class Theme:
     color_button_lit_fill: Color = Color(84, 30, 0, 255)
     color_button_lit_border: Color = Color(164, 84, 30, 255)
     color_button_hover_overlay: Color = Color(255, 255, 255, 32)
-
-
-################################################################################
-# Components
-
-
-class XY(Protocol):
-    x: float
-    y: float
-
-
-def rect(xy: XY, wh: XY) -> Rect:
-    return Rect(xy.x, xy.y, wh.x, wh.y)
 
 
 ################################################################################
