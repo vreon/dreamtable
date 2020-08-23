@@ -324,5 +324,6 @@ class PyRayHAL(HAL):
             self.pyray.begin_drawing()
             self.pyray.clear_background(self._clear_color.rgba)
             world.process(self)
+            # self.pyray.draw_fps(0, 0)
             self.pyray.end_drawing()
         self.pyray.close_window()
