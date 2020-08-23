@@ -2,7 +2,7 @@ import esper
 
 from dreamtable.constants import Tool
 from dreamtable import components as c
-from dreamtable.hal import HAL, MouseButton
+from dreamtable.hal import HAL, MouseButton, Color
 
 
 class DropperToolController(esper.Processor):
@@ -24,8 +24,12 @@ class DropperToolController(esper.Processor):
                     img.image, dropper_pos - pos.position
                 )
                 break
+        else:
+            context.color_dropper = Color(0, 0, 0, 0)
 
         if hal.is_mouse_button_pressed(MouseButton.LEFT):
+            hal.clear_mouse_button_pressed(MouseButton.LEFT)
             context.color_primary = context.color_dropper
         if hal.is_mouse_button_pressed(MouseButton.RIGHT):
+            hal.clear_mouse_button_pressed(MouseButton.RIGHT)
             context.color_secondary = context.color_dropper
