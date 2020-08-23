@@ -157,11 +157,11 @@ def run() -> None:
         # global state and input
         p.CameraContextController,
         # controllers
+        p.ToolSwitcherController,
         p.PencilToolController,
         p.DropperToolController,
         p.GridToolController,
         p.EggToolController,
-        p.ToolSwitcherController,
         p.DragController,
         p.HoverController,
         p.BoxSelectionController,
