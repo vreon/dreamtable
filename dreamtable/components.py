@@ -131,7 +131,7 @@ class CellGrid:
 class BackgroundGrid:
     color: Color
     line_width: float = 2.0
-    min_step: float = 4.0
+    min_step: float = 12.0
 
 
 @dataclass
