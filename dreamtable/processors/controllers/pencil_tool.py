@@ -20,9 +20,8 @@ class PencilToolController(esper.Processor):
         if hal.is_mouse_button_released(
             MouseButton.LEFT
         ) or hal.is_mouse_button_released(MouseButton.RIGHT):
+            self.last_pos = None
             self.draw_color = None
-
-        any_hovered = False
 
         for ent, (canvas, pos, ext, img) in self.world.get_components(
             c.Canvas, c.Position, c.Extent, c.Image
@@ -33,8 +32,6 @@ class PencilToolController(esper.Processor):
 
             if pencil_pos not in rect:
                 continue
-
-            any_hovered = True
 
             if not self.draw_color:
                 if hal.is_mouse_button_pressed(MouseButton.LEFT):
@@ -59,6 +56,3 @@ class PencilToolController(esper.Processor):
             )
             self.last_pos = pencil_pos.copy()
             img.dirty = True
-
-        if not any_hovered:
-            self.last_pos = None
