@@ -176,12 +176,6 @@ class Button:
 
 
 @dataclass
-class Pressable:
-    pressed: bool = False
-    down: bool = False
-
-
-@dataclass
 class ToolSwitcher:
     tool: Tool
 
