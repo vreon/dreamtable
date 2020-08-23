@@ -197,6 +197,7 @@ class Image:
 class SpriteRegion:
     x: int = 0
     y: int = 0
+    tint: Color = Color(255, 255, 255, 255)
     # todo width height
 
 

@@ -13,6 +13,6 @@ class SpriteRegionRenderer(esper.Processor):
             camera = context.cameras[pos.space]
             hal.push_camera(camera)
             hal.draw_texture_rect(
-                img.texture, c.rect(spr, ext.extent), pos.position.floored
+                img.texture, c.rect(spr, ext.extent), pos.position.floored, spr.tint
             )
             hal.pop_camera()

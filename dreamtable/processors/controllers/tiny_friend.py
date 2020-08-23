@@ -4,7 +4,7 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.constants import EPSILON
-from dreamtable.hal import HAL
+from dreamtable.hal import HAL, Color
 
 
 # todo lots of vector-y cleanup here
@@ -13,9 +13,13 @@ from dreamtable.hal import HAL
 # also also also, sprite_region needs to have a rect
 class TinyFriendController(esper.Processor):
     def process(self, hal: HAL) -> None:
-        for ent, (friend, vel, spr) in self.world.get_components(
-            c.TinyFriend, c.Velocity, c.SpriteRegion
+        for ent, (friend, vel, sel, spr) in self.world.get_components(
+            c.TinyFriend, c.Velocity, c.Selectable, c.SpriteRegion
         ):
+            spr.tint = (
+                Color(64, 128, 255, 255) if sel.selected else Color(255, 255, 255, 255)
+            )
+
             base_cell_x = friend.type * 4
             anim_cell_x = 0  # todo
             cell_x = base_cell_x + anim_cell_x
