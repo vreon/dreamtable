@@ -29,7 +29,7 @@ class PencilToolController(esper.Processor):
         ):
             camera = context.cameras[pos.space]
             rect = c.rect(pos.position, ext.extent)
-            pencil_pos = hal.get_screen_to_world(context.mouse_pos, camera)
+            pencil_pos = hal.get_screen_to_world(hal.get_mouse_position(), camera)
 
             if pencil_pos not in rect:
                 continue

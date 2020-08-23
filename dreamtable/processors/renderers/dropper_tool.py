@@ -11,7 +11,7 @@ class DropperToolRenderer(esper.Processor):
         if context.tool != Tool.DROPPER:
             return
 
-        pos = context.mouse_pos + Vec2(16, -50)
+        pos = hal.get_mouse_position() + Vec2(16, -50)
         rect = Rect(pos.x, pos.y, 33, 33)
         hal.draw_rectangle(rect, context.color_dropper)
         hal.draw_rectangle_lines(rect.grown(1), 1, Color(255, 255, 255, 255))

@@ -10,13 +10,11 @@ class DragController(esper.Processor):
         if not self.world.context.tool == Tool.MOVE:
             return
 
-        mouse_pos = self.world.context.mouse_pos
-
         for _, (pos, ext, drag) in self.world.get_components(
             c.Position, c.Extent, c.Draggable
         ):
             camera = self.world.context.cameras[pos.space]
-            drag_pos = hal.get_screen_to_world(mouse_pos, camera)
+            drag_pos = hal.get_screen_to_world(hal.get_mouse_position(), camera)
             rect = c.rect(pos.position, ext.extent)
             if hal.is_mouse_button_pressed(MouseButton.LEFT) and drag_pos in rect:
                 drag.dragging = True

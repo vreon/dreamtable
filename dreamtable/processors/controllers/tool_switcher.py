@@ -2,7 +2,7 @@ import esper
 
 from dreamtable import components as c
 from dreamtable.constants import Tool
-from dreamtable.hal import HAL, Key
+from dreamtable.hal import HAL, Key, MouseButton
 
 HOTKEYS = {
     Key.Q: Tool.MOVE,
@@ -20,10 +20,11 @@ class ToolSwitcherController(esper.Processor):
         context = self.world.context
 
         # Update the current tool if we pressed a tool switcher
-        for ent, (switcher, press) in self.world.get_components(
-            c.ToolSwitcher, c.Pressable
+        for ent, (switcher, hover) in self.world.get_components(
+            c.ToolSwitcher, c.Hoverable
         ):
-            if press.pressed:
+            if hover.hovered and hal.is_mouse_button_pressed(MouseButton.LEFT):
+                hal.clear_mouse_button_pressed(MouseButton.LEFT)
                 context.tool = switcher.tool
 
         # Switch to a tool if we pressed its hotkey

@@ -163,18 +163,16 @@ def run() -> None:
     for processor_class in [
         # global state and input
         p.CameraContextController,
-        p.MouseController,
         # controllers
         p.PencilToolController,
         p.DropperToolController,
         p.GridToolController,
         p.EggToolController,
+        p.ToolSwitcherController,
         p.DragController,
         p.HoverController,
-        p.PressController,
         p.BoxSelectionController,
         p.ImageController,
-        p.ToolSwitcherController,
         p.CanvasExportController,
         p.CameraController,
         p.MotionController,

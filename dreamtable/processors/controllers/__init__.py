@@ -12,9 +12,7 @@ from .grid_tool import GridToolController
 from .hover import HoverController
 from .image import ImageController
 from .motion import MotionController
-from .mouse import MouseController
 from .pencil_tool import PencilToolController
-from .press import PressController
 from .selectable_delete import SelectableDeleteController
 from .tiny_friend import TinyFriendController
 from .tool_switcher import ToolSwitcherController

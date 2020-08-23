@@ -56,10 +56,6 @@ class WorldContext:
 
     snap: Vec2 = Vec2(8, 8)
 
-    mouse_pos: Vec2 = field(default_factory=Vec2)
-    mouse_delta: Vec2 = field(default_factory=Vec2)
-    mouse_wheel: int = 0
-
 
 @dataclass
 class Theme:

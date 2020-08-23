@@ -17,7 +17,7 @@ class DropperToolController(esper.Processor):
         ):
             camera = self.world.context.cameras[pos.space]
             rect = c.rect(pos.position, ext.extent)
-            dropper_pos = hal.get_screen_to_world(context.mouse_pos, camera)
+            dropper_pos = hal.get_screen_to_world(hal.get_mouse_position(), camera)
 
             if dropper_pos in rect:
                 context.color_dropper = hal.get_image_color(

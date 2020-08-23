@@ -10,5 +10,5 @@ class HoverController(esper.Processor):
             c.Position, c.Extent, c.Hoverable
         ):
             camera = self.world.context.cameras[pos.space]
-            hover_pos = hal.get_screen_to_world(self.world.context.mouse_pos, camera)
+            hover_pos = hal.get_screen_to_world(hal.get_mouse_position(), camera)
             hov.hovered = hover_pos in c.rect(pos.position, ext.extent)

@@ -60,6 +60,8 @@ class PyRayHAL(HAL):
         self._cleared_mouse_button_presses: Set[MouseButton] = set()
         self._cleared_mouse_button_releases: Set[MouseButton] = set()
         self._is_mouse_wheel_move_cleared = False
+        self._mouse_delta = Vec2()
+        self._mouse_position = Vec2()
 
     # Window and screen
 
@@ -290,7 +292,10 @@ class PyRayHAL(HAL):
         self._cleared_mouse_button_releases.add(mouse_button)
 
     def get_mouse_position(self) -> Vec2:
-        return _vec2(self.pyray.get_mouse_position())
+        return self._mouse_position.copy()
+
+    def get_mouse_delta(self) -> Vec2:
+        return self._mouse_delta.copy()
 
     def get_mouse_wheel_move(self) -> float:
         if self._is_mouse_wheel_move_cleared:
@@ -307,9 +312,15 @@ class PyRayHAL(HAL):
         self._cleared_mouse_button_presses.clear()
         self._cleared_mouse_button_releases.clear()
 
+    def _update_mouse(self) -> None:
+        last_mouse_position = self._mouse_position.copy()
+        self._mouse_position = _vec2(self.pyray.get_mouse_position())
+        self._mouse_delta = self._mouse_position - last_mouse_position
+
     def run(self, world: World) -> None:
         while not self.pyray.window_should_close():
             self._reset_cleared_inputs()
+            self._update_mouse()
             self.pyray.begin_drawing()
             self.pyray.clear_background(self._clear_color.rgba)
             world.process(self)

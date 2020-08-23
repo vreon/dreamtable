@@ -13,7 +13,7 @@ class BoxSelectionController(esper.Processor):
 
     def process(self, hal: HAL) -> None:
         context = self.world.context
-        mouse_pos = context.mouse_pos
+        mouse_pos = hal.get_mouse_position()
 
         # Are we hovering over anything? If so, we can't create selections
         hovering_any = False

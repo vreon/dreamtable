@@ -10,8 +10,7 @@ class CameraController(esper.Processor):
 
     def process(self, hal: HAL) -> None:
         screen_size = hal.get_screen_size()
-        context = self.world.context
-        mouse_delta = context.mouse_delta
+        mouse_delta = hal.get_mouse_delta()
 
         for _, cam in self.world.get_component(c.Camera):
             if cam.active:
@@ -20,9 +19,9 @@ class CameraController(esper.Processor):
                     cam.camera.target -= mouse_delta / cam.camera.zoom
 
                 # smooth zoom
-                if context.mouse_wheel:
-                    cam.zoom_velocity += cam.zoom_speed * context.mouse_wheel
-                    context.mouse_wheel = 0
+                if wheel_move := hal.get_mouse_wheel_move():
+                    cam.zoom_velocity += cam.zoom_speed * wheel_move
+                    hal.clear_mouse_wheel_move()
 
                 # global hotkeys
                 if hal.is_key_pressed(Key.HOME):

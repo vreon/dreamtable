@@ -12,9 +12,8 @@ class EggToolController(esper.Processor):
         if not self.world.context.tool == Tool.EGG:
             return
 
-        context = self.world.context
-        camera = context.cameras[PositionSpace.WORLD]
-        click_pos = hal.get_screen_to_world(context.mouse_pos, camera)
+        camera = self.world.context.cameras[PositionSpace.WORLD]
+        click_pos = hal.get_screen_to_world(hal.get_mouse_position(), camera)
 
         if hal.is_mouse_button_pressed(MouseButton.LEFT):
             # todo lots of duplicate loading of images/textures

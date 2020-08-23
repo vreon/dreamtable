@@ -169,6 +169,9 @@ class HAL:
     def get_mouse_position(self) -> Vec2:
         raise NotImplementedError
 
+    def get_mouse_delta(self) -> Vec2:
+        raise NotImplementedError
+
     def get_mouse_wheel_move(self) -> float:
         raise NotImplementedError
 
